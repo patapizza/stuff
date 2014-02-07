@@ -1,4 +1,16 @@
-/* @TODO: declare var_t with template */
+enum var_type {
+    BOOL,
+    INT,
+    FLOAT
+};
+
+struct var_t {
+    var_type type;
+    bool boolValue;
+    int intValue;
+    float floatValue;
+};
+
 class IVar
 {
     private:
