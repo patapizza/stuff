@@ -12,7 +12,7 @@ struct var_t {
 };
 
 /*
- * Alt.:
+ * Alt. 1: templates
  * template <class var_t>
  * class IVar
  * {
@@ -37,7 +37,21 @@ struct var_t {
  * IVar<int> getVal(); // template class
  * IVar<float> getVal(); // specialized definition
  * Left to see what's going on with inheritance.
-*/
+ */
+
+/*
+ * Alt. 2: anonymous union within a struct
+ * struct var_t {
+ *     union {
+ *         bool boolValue;
+ *         int intValue;
+ *         float floatValue;
+ *     };
+ * };
+ * Usage:
+ * var_t blah;
+ * blah.boolValue = true;
+ */
 
 class IVar
 {
