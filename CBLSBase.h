@@ -11,11 +11,38 @@ struct var_t {
     float floatValue;
 };
 
+/*
+ * Alt.:
+ * template <class var_t>
+ * class IVar
+ * {
+ *     var_t val;
+ *     float activity;
+ *     public:
+ *         virtual var_t getVal();
+ *     etc.
+ * };
+ * This would be the template class (default class).
+ * That being defined, specialization follows, upon necessity:
+ * template <>
+ * class IVar <float>
+ * {
+ *     float val;
+ *     float activity;
+ *     public:
+ *         virtual float getVal();
+ *     etc.
+ * };
+ * Usage:
+ * IVar<int> getVal(); // template class
+ * IVar<float> getVal(); // specialized definition
+ * Left to see what's going on with inheritance.
+*/
+
 class IVar
 {
-    private:
-        var_t val;
-        float activity;
+    var_t val;
+    float activity;
     public:
         virtual var_t getVal() = 0;
         virtual void setVal(var_t newVal) = 0;
@@ -26,8 +53,7 @@ class IVar
 
 class ISolution
 {
-    private:
-        var_t *vars;
+    var_t *vars;
     public:
         virtual ~ISolution() {}
         virtual void print() = 0;
@@ -36,9 +62,8 @@ class ISolution
 
 class IConstraint
 {
-    private:
-        ISolution *currentSolution;
-        float activity;
+    ISolution *currentSolution;
+    float activity;
     public:
         virtual ISolution *getCurrentSolution() = 0;
         virtual void setCurrentSolution(ISolution *newCurrentSolution) = 0;
@@ -48,8 +73,7 @@ class IConstraint
 
 class INeighborhoodManager
 {
-    private:
-        ISolution *currentSolution;
+    ISolution *currentSolution;
     public:
         virtual ISolution *getCurrentSolution() = 0;
         virtual void setCurrentSolution(ISolution *newCurrentSolution) = 0;
@@ -59,13 +83,12 @@ class INeighborhoodManager
 
 class ILSProgram
 {
-    private:
-        int iterNumber;
-        ISolution *incumbentSolution;
-        ISolution *currentSolution;
-        ISolution *bestSolution;
-        IConstraint *constraints;
-        INeighborhoodManager *neighborhoodManager;
+    int iterNumber;
+    ISolution *incumbentSolution;
+    ISolution *currentSolution;
+    ISolution *bestSolution;
+    IConstraint *constraints;
+    INeighborhoodManager *neighborhoodManager;
     public:
         virtual ISolution *getCurrentSolution() = 0;
         virtual void setCurrentSolution(ISolution *newCurrentSolution) = 0;
