@@ -37,6 +37,7 @@ struct var_t {
  * IVar<int> getVal(); // template class
  * IVar<float> getVal(); // specialized definition
  * Left to see what's going on with inheritance.
+ * Need to be implemented within the header file.
  */
 
 /*
@@ -112,4 +113,16 @@ class ILSProgram
         virtual void run() = 0;
         virtual void addConstraint(IConstraint *newConstraint) = 0;
         virtual bool terminalCondition() = 0;
+};
+
+class LSProgram : public ILSProgram
+{
+    public:
+        ISolution *getCurrentSolution();
+        void setCurrentSolution(ISolution *newCurrentSolution);
+        INeighborhoodManager *getNeighborhoodManager();
+        void setNeighborhoodManager(INeighborhoodManager *newNeighborhoodManager);
+        void run();
+        void addConstraint(IConstraint *newConstraint);
+        bool terminalCondition();
 };
