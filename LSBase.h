@@ -1,4 +1,4 @@
-#import <iostream>
+#include <iostream>
 
 using namespace std;
 
@@ -30,7 +30,7 @@ namespace CBLS {
 
 	};
 */
-	class solution {
+	class Solution {
 	public:
 		virtual void generateInitialSolution() =0; 
 		virtual void shakeSolution() =0;					// obtains a neighboring solution by disturbing the current one

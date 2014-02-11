@@ -3,13 +3,13 @@ CFLAGS=-g -O0
 SRC=testTSP.cpp
 OBJ=testTSP.o
 
-all: testTSP
+all: NQueens
 
 testTSP: $(OBJ)
-	$(CC) $(CFLAGS) -o testTSP $(OBJ)
+	$(CC) $(CFLAGS) -o NQueens $(OBJ)
 
-testTSP.o: testTSP.cpp LSBase.h
-	$(CC) $(CFLAGS) -c testTSP.cpp
+testTSP.o: NQueens.cpp LSBase.h
+	$(CC) $(CFLAGS) -c NQueens.cpp
 
 clean:
-	rm testTSP *.o
+	rm NQueens *.o
