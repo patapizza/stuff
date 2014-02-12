@@ -21,12 +21,12 @@ int randmax(int max) {
 class SolutionNQueens: public Solution {
     int n;
     int **board;
-    int *pos;
+    int *queens;
 public:
 	SolutionNQueens(int n) {
         this->n = n;
         this->board = new int*[n];
-        this->pos = new int[n];
+        this->queens = new int[n];
         for (int i = 0; i < n; i++)
             this->board[i] = new int[n];
 		cout << "Generating initial solution... ";
@@ -37,24 +37,24 @@ public:
     SolutionNQueens(const SolutionNQueens &old) {
         n = old.n;
         board = new int*[n];
-        pos = new int[n];
-        memcpy(pos, old.pos, (n + 1) * sizeof(int));
+        queens = new int[n];
+        memcpy(queens, old.queens, n * sizeof(int));
         for (int i = 0; i < n; i++) {
             board[i] = new int[n];
-            memcpy(board[i], old.board[i], (n + 1) * sizeof(int));
+            memcpy(board[i], old.board[i], n * sizeof(int));
         }
     }
 
     SolutionNQueens &operator = (const SolutionNQueens &sol) {
-        memcpy(pos, sol.pos, (n + 1) * sizeof(int));
+        memcpy(queens, sol.queens, n * sizeof(int));
         for (int i = 0; i < n; i++)
-            memcpy(board[i], sol.board[i], (n + 1) * sizeof(int));
+            memcpy(board[i], sol.board[i], n * sizeof(int));
         return *this;
     }
 
     ~SolutionNQueens() {
         delete [] board;
-        delete [] pos;
+        delete [] queens;
     }
 
     friend std::ostream &operator << (std::ostream &out, SolutionNQueens &s);
@@ -63,12 +63,17 @@ public:
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++)
                 board[i][j] = 0;
-            pos[i] = randmax(n);
-            board[i][pos[i]] = 1;
+            queens[i] = randmax(n);
+            board[i][queens[i]] = 1;
         }
 	}
 
 	void shakeSolution() {
+        int x = randmax(n);
+        int y = randmax(n);
+        board[x][queens[x]] = 0;
+        board[x][y] = 1;
+        queens[x] = y;
 	}
 
 	void restore() {
@@ -80,7 +85,12 @@ public:
 
 	float getViolations() {
         // todo once I get draft sheets --'
-        return 0.0;
+        float violations = 0.0;
+        for (int i = 0; i < n; i++)
+            for (int j = i + 1; j < n; j++)
+                if (queens[i] == queens[j] || j - i == abs(queens[i] - queens[j]))
+                    ++violations;
+        return violations;
 	}
 };
 
@@ -90,6 +100,7 @@ inline std::ostream &operator << (std::ostream &out, SolutionNQueens &s) {
             out << s.board[i][j] << " ";
         out << endl;
     }
+    out << "Violations: " << s.getViolations() << endl;
     return out;
 }
 
@@ -103,7 +114,7 @@ public:
 	}
 
 	bool terminationCondition() {
-        return this->bestSolution->getViolations() == 0 || this->iter == 100;
+        return this->bestSolution->getViolations() == 0 || this->iter == 1000000;
 	}
 };
 
