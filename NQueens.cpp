@@ -77,6 +77,7 @@ public:
 	}
 
 	void restore() {
+        // to implement
 	}
 
 	float getCost() {
@@ -84,7 +85,6 @@ public:
 	}
 
 	float getViolations() {
-        // todo once I get draft sheets --'
         float violations = 0.0;
         for (int i = 0; i < n; i++)
             for (int j = i + 1; j < n; j++)
