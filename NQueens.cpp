@@ -22,11 +22,13 @@ class SolutionNQueens: public Solution {
     int n;
     int **board;
     int *queens;
+    int *violations;
 public:
 	SolutionNQueens(int n) {
         this->n = n;
         this->board = new int*[n];
         this->queens = new int[n];
+        this->violations = new int[n];
         for (int i = 0; i < n; i++)
             this->board[i] = new int[n];
 		cout << "Generating initial solution... ";
@@ -38,7 +40,9 @@ public:
         n = old.n;
         board = new int*[n];
         queens = new int[n];
+        violations = new int[n];
         memcpy(queens, old.queens, n * sizeof(int));
+        memcpy(violations, old.violations, n * sizeof(int));
         for (int i = 0; i < n; i++) {
             board[i] = new int[n];
             memcpy(board[i], old.board[i], n * sizeof(int));
@@ -47,6 +51,7 @@ public:
 
     SolutionNQueens &operator = (const SolutionNQueens &sol) {
         memcpy(queens, sol.queens, n * sizeof(int));
+        memcpy(violations, sol.violations, n * sizeof(int));
         for (int i = 0; i < n; i++)
             memcpy(board[i], sol.board[i], n * sizeof(int));
         return *this;
@@ -55,6 +60,7 @@ public:
     ~SolutionNQueens() {
         delete [] board;
         delete [] queens;
+        delete [] violations;
     }
 
     friend std::ostream &operator << (std::ostream &out, SolutionNQueens &s);
@@ -66,14 +72,37 @@ public:
             queens[i] = randmax(n);
             board[i][queens[i]] = 1;
         }
+        countViolations();
+    }
+
+    void countViolations() {
+        for (int i = 0; i < n; i++) {
+            violations[i] = 0;
+            for (int j = i + 1; j < n; j++)
+                if (queens[i] == queens[j] || j - i == abs(queens[i] - queens[j])) {
+                    ++violations[i];
+                    ++violations[j];
+                }
+        }
 	}
 
 	void shakeSolution() {
-        int x = randmax(n);
-        int y = randmax(n);
+        int max = 0;
+        int argmax = -1;
+        for (int i = 0; i < n; i++)
+            if (violations[i] > max) {
+                max = violations[i];
+                argmax = i;
+            }
+        int x = argmax;
+        int y;
+        do {
+            y = randmax(n);
+        } while (y == queens[x]);
         board[x][queens[x]] = 0;
         board[x][y] = 1;
         queens[x] = y;
+        countViolations();
 	}
 
 	void restore() {
@@ -87,9 +116,7 @@ public:
 	float getViolations() {
         float violations = 0.0;
         for (int i = 0; i < n; i++)
-            for (int j = i + 1; j < n; j++)
-                if (queens[i] == queens[j] || j - i == abs(queens[i] - queens[j]))
-                    ++violations;
+            violations += this->violations[i];
         return violations;
 	}
 };
