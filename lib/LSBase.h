@@ -1,7 +1,5 @@
 #import <iostream>
 
-using namespace std;
-
 namespace CBLS {
 /*
 	template <class T> class var {
@@ -34,12 +32,8 @@ namespace CBLS {
 	public:
 		virtual void generateInitialSolution() =0; 
 		virtual void shakeSolution() =0;					// obtains a neighboring solution by disturbing the current one
-		virtual void restore() =0; 						// restores the solution as it was before the last shaking
 		virtual float getCost() =0;						// returns the solution cost
 		virtual float getViolations() =0;				// returns the violation penalty ≥ 0 (if any); zero means feasible
-		float getEval() {
-			return (getCost() + getViolations());
-		}
 	};
 
 	template <class S> class LSProgram {
@@ -53,6 +47,10 @@ namespace CBLS {
 		virtual bool terminationCondition() =0; 		// decides whether the LS procedure should stop or not
 		virtual bool acceptanceCriterion(S& candidateSolution, S& incumbentSolution) =0;	
 														// tells whether current solution must be accepted, according to the incumbent solution
+		virtual float computeSolutionEval(S& solution) {			// can be overloaded in derived class, for metaheuristic management
+			return solution.getCost() + solution.getViolations();
+		}
+
 		void run(){
 			iter = 0;
 			S incumbentSolution(*bestSolution);			// invokes the copy constructor
@@ -63,8 +61,8 @@ namespace CBLS {
 				if (acceptanceCriterion(neighborSolution, incumbentSolution)) {
 					//cout << "*";
 					incumbentSolution = neighborSolution;
-					if (neighborSolution.getEval() < bestSolution->getEval()) {
-						//cout << "!";
+					if (computeSolutionEval(neighborSolution) < computeSolutionEval(*bestSolution)) {
+						std::cout << "!" << std::flush;
 						*bestSolution = incumbentSolution;
 					} 
 				}
