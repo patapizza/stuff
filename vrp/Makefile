@@ -1,5 +1,5 @@
 CC		= g++
-CFLAGS	= -g -O0 
+CFLAGS	= -g -O0 -std=c++0x
 LIBPATH = ../lib
 SRC		= testVRP.cpp $(LIBPATH)/VRPlib.cpp
 INC	= $(LIBPATH)/LSBase.h $(LIBPATH)/VRPlib.h
