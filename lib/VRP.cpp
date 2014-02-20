@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>	// file I/O
+#include <sstream>	// ostringstream
 #include <cstdlib>	// rand
 #include <ctime>	// time
 #include <cmath>	// sqrt
@@ -204,8 +205,8 @@ float solutionVRP::getViolations() {
 }		
 
 string& solutionVRP::toString() {
-	static string str; str ="";
-	int *load = new int [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
+	ostringstream out;
+	float *load = new float [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
 	
 	//for (int i=1; i<NVeh+N+1; i++)
 	//	cout << "(i:" << i-NVeh << ",v:" << vehicle[i]-NVeh << "," << previous[i]-NVeh << "," 
@@ -218,13 +219,14 @@ string& solutionVRP::toString() {
 			i=previous[i];
 		} 
 	}
-	if (getViolations() > 0) str += "Infeasible ! ";
-	str += "Cost=" + to_string(getCost()) + " \n";
+	if (getViolations() > 0) out << "Infeasible ! ";
+	out << "Cost=" << getCost() << " \n";
 	for(int r=1; r<NVeh+1; r++) {
-		str += "Route " + to_string(r) + "(" + to_string(load[r]) + "): D ";
+		out << "Route " << r << "(" << load[r] << "): D ";
 		for(int i=next[r]; i!=r; i=next[i])
-			str += to_string(i-NVeh) + " ";
-		str += "D\n";
+			out << i-NVeh << " ";
+		out << "D\n";
 	}
+	static string str = ""; str = out.str();
 	return (str);
 }

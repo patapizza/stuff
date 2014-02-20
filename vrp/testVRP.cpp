@@ -6,44 +6,37 @@
 #include <cstring>	// memcpy
 
 #include "../lib/VRPlib.h"
-#import "../lib/LSBase.h"
+#include "../lib/LSProgram.h"
+#include "../lib/LSBase.h"
 
 using namespace CBLS;
 using namespace std;
 
 
-/*
-	LSProgram specific implementation
-	- acceptanceCriterion()
-	- terminationCondition()
-*/
-
-template <class S> class LSProgramTSP : public LSProgram<S> {
-public:
-	LSProgramTSP(S *initialSolution) : LSProgram<S>(initialSolution) {}
-
-	bool acceptanceCriterion(S& candidateSolution, S& incumbentSolution) {
-		if (LSProgram<S>::computeSolutionEval(candidateSolution) < LSProgram<S>::computeSolutionEval(incumbentSolution)) return true;
-		else return (rand() % 100 <= 2);	// 3% diversification
-	}
-	bool terminationCondition() {
-		return (this->iter >= 10000000);		// this needed to access parent protected variables
-	}
-	float computeSolutionEval(S& solution) {			// overload
-		return solution.getCost() + 10*solution.getViolations();
-	}
-};
+char *program_name;
+char *instance_file;
+int nb_iter;
 
 
+void usage() {
+	cerr << "Usage is " << program_name << " nb_iter instance_file \n";
+	exit (8);
+}
 
-int main() {
+
+int main(int argc, char *argv[]) {
+	program_name = argv[0];
+	if (argc < 3) usage();
+	nb_iter = stoi(argv[1]);
+	instance_file = argv[2];
+
 	long t = time(NULL);
+	srand(t);
 	readInstanceFileCordeauLaporteVRPold("p01"); 
 	solutionVRP s;
 	cout << "Initial solution: " << endl << s.toString() << endl << flush;
-	srand(t);
 
-	LSProgramTSP<solutionVRP> p(&s);
+	LSProgramBasic<solutionVRP> p(&s, nb_iter, 3);
 	cout << "Running LS program" << endl;
 	p.run();
 	cout << endl << "Terminated. Best solution found: \n" << s.toString() << endl;
