@@ -1,0 +1,11 @@
+File Name: Result-(Type)-(Number of Vertex)-(Different duration type of route)-(Vaule of \alpha_{k})
+
+Type: R, C1, C2 or RC; Number of Vertex: 25, 50, 75 or 100; Different Duration of route: L1 (\varphi = 1), L2 (\varphi = 2), L3 (\varphi = 3); Vaule of \alpha_{k}: 1.5, 2 or 3.
+
+Date Format:
+(Number of routes) (travel cost) (expected cost of service time) (expected cost of recourse) (total cost)
+
+(Number of vertices) (vertex1) (vertex1) (vertex3) ...
+.
+.
+.
