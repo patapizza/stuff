@@ -28,7 +28,7 @@ void readInstanceFileCordeauLaporteVRPold(const char *filename) {
 	std::ifstream instance_file;
 	instance_file.open(filename);
 	if (instance_file.fail()) {
-		std::cerr << "Unable to open " << filename;
+		std::cerr << "Error: Unable to open " << filename << endl;
 		exit (8);
 	}
 
@@ -46,6 +46,8 @@ void readInstanceFileCordeauLaporteVRPold(const char *filename) {
 	instance_file >> i;			// skip int
 	instance_file >> Q;			// retrieve max capacity
 
+	// DEPOTS
+	instance_file >> i;					// skip int
 	instance_file >> coordX[1]; 		// retrieve x coordinate
 	instance_file >> coordY[1]; 		// retrieve y coordinate
 	std::getline(instance_file, line);	// skip end of line
@@ -53,6 +55,8 @@ void readInstanceFileCordeauLaporteVRPold(const char *filename) {
 		coordX[r] = coordX[1];
 		coordY[r] = coordY[1];
 	} 
+
+	// REQUESTS
 	for (int j=1; j<N+1; j++) {
 		instance_file >> i; 				// skip int
 		instance_file >> coordX[j+NVeh]; 	// retrieve x coordinate

@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
 	long t = time(NULL);
 	srand(t);
-	readInstanceFileCordeauLaporteVRPold("p01"); 
+	readInstanceFileCordeauLaporteVRPold(instance_file); 
 	solutionVRP s;
 	cout << "Initial solution: " << endl << s.toString() << endl << flush;
 
