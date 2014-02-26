@@ -7,34 +7,18 @@
 
 #include "LSBase.h"
 
+#ifndef VRPlib_H
+#define	VRPlib_H
+
 using namespace CBLS;
 
-/* Handle instance files of Cordeau-Laporte vrp/old */
+/* Handles instance files of Cordeau-Laporte in data/vrp/old */
 void readInstanceFileCordeauLaporteVRPold(const char *filename);
 
-/* class solutionTSP
-*	defines a solution for a TSP 
-*/
-class solutionTSP: public solution {
-private:
-	/* Decision variables */
-	int *step;			// step[i] = j iff vertex j is visited in the i-th position
-						// !!! -> Numbered from 1 to N
-public:
-	solutionTSP();												// constructor ***
-	solutionTSP(const solutionTSP& old_solution);				// copy constructor ***
-	solutionTSP& operator = (const solutionTSP& sol);
-	~solutionTSP();
-	//friend std::ostream &operator << (std::ostream &out_file, solutionTSP& s);
+/* Handles instance files of Cordeau-Laporte in data/vrptw/old */
+void readInstanceFileCordeauLaporteVRPTWold(const char *filename);
 
-	void generateInitialSolution();
-	void shakeSolution();
-	float getCost();
-	float getViolations();
-	std::string& toString();
-};
 
-//inline std::ostream &operator << (std::ostream &out_file, solutionTSP& s);
 
 class solutionVRP: public solution {
 private:
@@ -55,3 +39,33 @@ public:
 	float getViolations();
 	std::string& toString();
 };
+
+
+class solutionVRPTW: public solution {
+private:
+	/* Decision variables */
+	int *previous;		// previous[i] = j iff vertex j is visited before i in the same route
+	int *next;			// !!! -> Numbered from 1 to N
+	int *vehicle;		// vehicle[i] = j iff vertex j is serviced by vehicle i
+	float *b;			// service times
+public:
+	solutionVRPTW();												// constructor ***
+	solutionVRPTW(const solutionVRPTW& old_solution);				// copy constructor ***
+	solutionVRPTW& operator = (const solutionVRPTW& sol);
+	~solutionVRPTW();
+	friend std::ostream &operator << (std::ostream &out_file, solutionVRPTW& s);
+
+	/* virtual method instanciations */
+	void generateInitialSolution();
+	void shakeSolution();
+	float getCost();
+	float getViolations();
+
+	/* specific methods */
+	void computeServiceTimes(int k = 0);
+	float getCostR(int k = 0);
+	std::string& toString();
+};
+
+
+#endif

@@ -1,4 +1,6 @@
 #include <iostream>
+#ifndef LSBase_H
+#define	LSBase_H
 
 namespace CBLS {
 /*
@@ -33,7 +35,7 @@ namespace CBLS {
 		virtual void generateInitialSolution() =0; 
 		virtual void shakeSolution() =0;					// obtains a neighboring solution by disturbing the current one
 		virtual float getCost() =0;						// returns the solution cost
-		virtual float getViolations() =0;				// returns the violation penalty ≥ 0 (if any); zero means feasible
+		virtual float getViolations() =0;				// returns the number of violated constraints (if any); zero means feasible
 	};
 
 	template <class S> class LSProgram {
@@ -51,7 +53,7 @@ namespace CBLS {
 			return solution.getCost() + solution.getViolations();
 		}
 
-		void run(){
+		virtual void run(){
 			iter = 0;
 			S incumbentSolution(*bestSolution);			// invokes the copy constructor
 			S neighborSolution(*bestSolution);			// invokes the copy constructor
@@ -75,4 +77,5 @@ namespace CBLS {
 
 }
 
+#endif
 

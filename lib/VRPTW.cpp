@@ -1,10 +1,13 @@
 #include <iostream>
 #include <fstream>	// file I/O
+#include <sstream>	// ostringstream
 #include <cstdlib>	// rand
 #include <ctime>	// time
 #include <cmath>	// sqrt
 #include <cstring>	// memcpy
 #include <limits>   // numeric_limits
+#include <iomanip>	// setw
+#include <algorithm>// std::max
 
 #include "VRPlib.h"
 
@@ -12,22 +15,39 @@ using namespace std;
 
 
 /* Problem data variables */
-int N;		// number of vertices [1..N]
-int NVeh;	// number of vehicles [1..NVeh]
-int Q;		// vehicle max capacity
-double **c;
-float *coordX; float *coordY;
-int *demand;
+int N;			// number of customer vertices, numbered: [NVeh+1..NVeh+N]
+int NVeh;		// number of vehicles, numbered: [1..NVeh]
+int Q;			// vehicle max capacity
+double **c;		// travel costs/durations
+float *coordX; 
+float *coordY;
+float *duration;	// service duration at each vertex
+float *demand;		// demand et each vertex
+int   *e;			// start of time window at each vertex
+int   *l;			// end of time window at each vertex
 
 
-/* Handle instance files of Cordeau-Laporte vrp/old */
-void readInstanceFileCordeauLaporteVRPold(const char *filename) {
+
+/* miscellaous functions */
+struct misc {
+	inline static const string redExpr(bool expr) {
+		if (expr) return "\033[0;31m";
+		else return ""; 
+	}
+	inline static const string resetColor() {
+		return "\033[0;0m";
+	}};
+
+
+
+/* Handles instance files of Cordeau-Laporte in data/vrptw/old */
+void readInstanceFileCordeauLaporteVRPTWold(const char *filename) {
 	int i;
 	std::string line;
 	std::ifstream instance_file;
 	instance_file.open(filename);
 	if (instance_file.fail()) {
-		std::cerr << "Unable to open " << filename;
+		std::cerr << endl << " Error: Unable to open " << filename << endl;
 		exit (8);
 	}
 
@@ -37,28 +57,50 @@ void readInstanceFileCordeauLaporteVRPold(const char *filename) {
 	c = new double*[NVeh+N+1];
 	for(int i=0; i<NVeh+N+1; i++) c[i] = new double[NVeh+N+1];
 
-	coordX = new float[NVeh+N+1]; 
-	coordY = new float[NVeh+N+1];
-	demand = new int[NVeh+N+1];
+	coordX 		= new float[NVeh+N+1]; 
+	coordY 		= new float[NVeh+N+1];
+	duration 	= new float[NVeh+N+1];
+	demand 		= new float[NVeh+N+1];
+	e 			= new int[NVeh+N+1]; 
+	l 			= new int[NVeh+N+1];
+
 	std::getline(instance_file, line); // skip end of line
 
 	instance_file >> i;			// skip int
 	instance_file >> Q;			// retrieve max capacity
 
-	instance_file >> coordX[1]; 		// retrieve x coordinate
-	instance_file >> coordY[1]; 		// retrieve y coordinate
-	std::getline(instance_file, line);	// skip end of line
+	// DEPOTS
+	instance_file >> i;			// skip int
+	instance_file >> coordX[1]; 	// retrieve x coordinate
+	instance_file >> coordY[1]; 	// retrieve y coordinate
+	instance_file >> duration[1];	// retrieve service duration
+	instance_file >> demand[1];		// retrieve demand
+	instance_file >> i; 			// skip int
+	instance_file >> i; 			// skip int
+	//instance_file >> i; 			// skip int 	---->    /!\ One int less to skip in the depot line
+	instance_file >> e[1];			// retrieve start TW
+	instance_file >> l[1];			// retrieve end TW
 	for (int r=2; r<NVeh+1; r++) {
 		coordX[r] = coordX[1];
 		coordY[r] = coordY[1];
+		duration[r] = duration[1];	
+		demand[r] = demand[1];		
+		e[r] = e[1];				
+		l[r] = l[1];				
 	} 
+
+	// REQUESTS
 	for (int j=1; j<N+1; j++) {
-		instance_file >> i; 				// skip int
+		instance_file >> i; 				// vertex number - skip it
 		instance_file >> coordX[j+NVeh]; 	// retrieve x coordinate
 		instance_file >> coordY[j+NVeh]; 	// retrieve y coordinate
-		instance_file >> i;					// skip int
+		instance_file >> duration[j+NVeh];	// retrieve service duration
 		instance_file >> demand[j+NVeh];	// retrieve demand
-		std::getline(instance_file, line);	// skip end of line
+		instance_file >> i; 				// skip int
+		instance_file >> i; 				// skip int
+		instance_file >> i; 				// skip int
+		instance_file >> e[j+NVeh];			// retrieve start TW
+		instance_file >> l[j+NVeh];			// retrieve end TW
 	}
 
 	instance_file.close();
@@ -78,37 +120,41 @@ inline std::ostream &operator << (std::ostream &out_file, solutionTSP& s) {
 }*/
 
 
-/* class solutionVRP ********************************************************************************************
+/* class solutionVRPTW ********************************************************************************************
 *	defines a solution for a TSP 
 */
-solutionVRP::solutionVRP() {											// constructor ***
-	previous = new int[NVeh+N+1];	// vertices from 1 to NVeh + N
+solutionVRPTW::solutionVRPTW() {											// constructor ***
+	previous = new int[NVeh+N+1];	// vertices from 1 to NVeh + N (i.e. for every vehicle depot and customer vertices)
 	next = new int[NVeh+N+1];
-	vehicle = new int[NVeh+N+1];	// vertices from 1 to Nveh + Nveh 	// vehicle[i] = 0 iff i is a depot
+	vehicle = new int[NVeh+N+1];	// vertices from 1 to Nveh + Nveh 	  vehicle[i] = 0 iff i is a depot
+	b = new float[NVeh+N+1];		// service times for every vehicle depot and customer vertices
 
 	cout << "Generating initial solution ..." << flush;
 	generateInitialSolution();
 	cout << "Done.\n" << flush; 
 }
-solutionVRP::solutionVRP(const solutionVRP& old_solution) {				// copy constructor ***
+solutionVRPTW::solutionVRPTW(const solutionVRPTW& old_solution) {				// copy constructor ***
 	previous = new int[NVeh+N+1];
 	next = new int[NVeh+N+1];
 	vehicle = new int[NVeh+N+1];
+	b = new float[NVeh+N+1];
 	*this = old_solution;
 }
-solutionVRP& solutionVRP::operator = (const solutionVRP& sol) {
+solutionVRPTW& solutionVRPTW::operator = (const solutionVRPTW& sol) {
 	memcpy(previous, sol.previous, (NVeh+N+1)*sizeof(int));
 	memcpy(next, sol.next, (NVeh+N+1)*sizeof(int));
 	memcpy(vehicle, sol.vehicle, (NVeh+N+1)*sizeof(int));
+	memcpy(b, sol.b, (NVeh+N+1)*sizeof(float));
 	return (*this);
 }
-solutionVRP::~solutionVRP() {										// destructor ***
+solutionVRPTW::~solutionVRPTW() {										// destructor ***
 	delete [] previous;
 	delete [] next;
 	delete [] vehicle;
+	delete [] b;
 }
 
-void solutionVRP::generateInitialSolution() {
+void solutionVRPTW::generateInitialSolution() {
 	int *last = new int [NVeh+1];
 	for(int r=1; r<NVeh+1; r++)	last[r] = r;
 	vehicle[0] = 0;
@@ -129,19 +175,21 @@ void solutionVRP::generateInitialSolution() {
 			i=previous[i];
 		} next[r] = n;
 	}
+	computeServiceTimes();
 }
-void solutionVRP::shakeSolution() {
-	/* Move a vertex from its position to a 
+inline void solutionVRPTW::shakeSolution() {
+	/* Move a random vertex from its position to a 
 			1) random different position 
 			2) best insert 
 		at 50-50%
 	*/
-	int vertex, before_i;
+	int vertex, before_i, from_route;
 
-	vertex = rand() % N + (NVeh + 1); // generate random number in [NVeh+1..NVeh+N]
+	vertex = rand() % N + (NVeh + 1); // generate random number in [NVeh+1..NVeh+N] to select one customer vertex
+	from_route = vehicle[vertex];		// remember the route
 
 	int chance = rand() % 100 + 1;
-	if (chance < 50) {
+	if (chance < 30) {
 		do {
 			before_i = rand() % (NVeh + N) + 1; // generate random number in [1..NVeh+N]
 		} while (before_i == vertex || before_i == next[vertex]);
@@ -171,23 +219,42 @@ void solutionVRP::shakeSolution() {
 	previous[before_i] = vertex;
 	next[previous[vertex]] = vertex;
 	//cout << toString();
+
+	computeServiceTimes(vehicle[from_route]);
+	if (vehicle[from_route] != vehicle[before_i]) 
+		computeServiceTimes(vehicle[before_i]);
 }
-float solutionVRP::getCost() {
-	float cost = 0.0;
-	
+
+inline void solutionVRPTW::computeServiceTimes(int k) {	// recomputes service times at route k (k==0: every routes)
 	for (int r=1; r<NVeh+1; r++) {
+		if (k != 0 && k != r) continue;
+		b[r] = 0;
+		int i = next[r];
+		while (i != r) {
+			b[i] = max((double) e[i], b[previous[i]] + duration[previous[i]] + c[previous[i]][i]);
+			i = next[i];
+		} b[r] = max((double) e[r], b[previous[r]] + duration[previous[r]] + c[previous[r]][r]);
+	}
+}
+
+inline float solutionVRPTW::getCostR(int k) {	// returns cost of route k (all route cost of k==0)
+	float cost = 0.0;
+	for (int r=1; r<NVeh+1; r++) {
+		if (k != 0 && k != r) continue;
 		int i = previous[r];
 		while (i != r) {
 			cost += c[i][next[i]];
 			i=previous[i];
 		} cost += c[i][next[i]];
 	}
-
 	return (cost);
 }
-float solutionVRP::getViolations() {
-	float v = 0.0;
-	int *load = new int [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
+inline float solutionVRPTW::getCost() {	// returns cost of route k
+	return getCostR();
+}
+inline float solutionVRPTW::getViolations() {
+	int v = 0;
+	float *load = new float [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
 	
 	for (int r=1; r<NVeh+1; r++) {	// compute vehicle loads
 		int i = previous[r];
@@ -198,14 +265,19 @@ float solutionVRP::getViolations() {
 		} 
 	}
 
-	for(int r=1; r<NVeh+1; r++) if (load[r] > Q) v += load[r] - Q;
+	for(int r=1; r<NVeh+1; r++) if (load[r] > Q) v ++;
+	for(int i=1; i<NVeh+N+1; i++) if (b[i]+0.000001 > l[i]) v ++;
 
 	return (v);
 }		
 
-string& solutionVRP::toString() {
-	static string str; str ="";
-	int *load = new int [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
+
+string& solutionVRPTW::toString() {
+
+	ostringstream out; 
+	out.setf(std::ios::fixed);
+	out.precision(2);
+	float *load = new float [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
 	
 	//for (int i=1; i<NVeh+N+1; i++)
 	//	cout << "(i:" << i-NVeh << ",v:" << vehicle[i]-NVeh << "," << previous[i]-NVeh << "," 
@@ -218,13 +290,21 @@ string& solutionVRP::toString() {
 			i=previous[i];
 		} 
 	}
-	if (getViolations() > 0) str += "Infeasible ! ";
-	str += "Cost=" + to_string(getCost()) + " \n";
+	if (getViolations() > 0) out << "\033[0;31mInfeasible ! Violations: " << getViolations() << "\033[0;0m" << endl;
+	out << "Cost = " << getCost() << " \n";
 	for(int r=1; r<NVeh+1; r++) {
-		str += "Route " + to_string(r) + "(" + to_string(load[r]) + "): D ";
-		for(int i=next[r]; i!=r; i=next[i])
-			str += to_string(i-NVeh) + " ";
-		str += "D\n";
+		out << "Route " << setw(2) << r << " (c:" << setw(7) << getCostR(r) 
+			<< " q:" << misc::redExpr(load[r]>Q) << setw(7) << load[r] << misc::resetColor() << "): D \t";
+		for(int i=next[r], n=1; i!=r; i=next[i], n++) {
+			out << setw(3) << i-NVeh << "[" << misc::redExpr(b[i]>l[i]) << setw(7) << setfill('0') 
+				<< b[i] << misc::resetColor() << "]" << " " << setfill(' ');
+			if ((n%8) == 0) out << endl << "\t\t\t\t\t";
+		}
+		out << "  D" << "[" << misc::redExpr(b[r]>l[r]) << setw(7) << setfill('0') << b[r] << misc::resetColor() << "]" << endl << setfill(' ');
 	}
+	static string str = ""; str = out.str();
 	return (str);
 }
+
+
+

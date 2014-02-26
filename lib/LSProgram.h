@@ -33,7 +33,7 @@ public:
 		return (this->iter >= max_iter);		// this needed to access parent protected variables
 	}
 	float computeSolutionEval(S& solution) {			// overload
-		return solution.getCost() + 10*solution.getViolations();
+		return solution.getCost() + 100*solution.getViolations();
 	}
 };
 
