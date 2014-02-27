@@ -32,10 +32,13 @@ namespace CBLS {
 */
 	class solution {
 	public:
+		/* Main methods */
 		virtual void generateInitialSolution() =0; 
-		virtual void shakeSolution() =0;					// obtains a neighboring solution by disturbing the current one
+		virtual void shakeSolution() =0;				// obtains a neighboring solution by disturbing the current one
 		virtual float getCost() =0;						// returns the solution cost
-		virtual float getViolations() =0;				// returns the number of violated constraints (if any); zero means feasible
+		virtual int getViolations(int c = 0) =0;		// # of violations in soft constraint c (if any); c = 0 for all constraints
+		/* Misc methods */
+		virtual int nbConstraints() =0;					// # of soft constraints in the current problem (used by LSProgram extensions)
 	};
 
 	template <class S> class LSProgram {
@@ -47,25 +50,25 @@ namespace CBLS {
 			this->bestSolution = initialSolution;
 		}
 		virtual bool terminationCondition() =0; 		// decides whether the LS procedure should stop or not
-		virtual bool acceptanceCriterion(S& candidateSolution, S& incumbentSolution) =0;	
+		virtual bool acceptanceCriterion(S& candidateSolution, S& currentSolution) =0;	
 														// tells whether current solution must be accepted, according to the incumbent solution
-		virtual float computeSolutionEval(S& solution) {			// can be overloaded in derived class, for metaheuristic management
+		virtual float computeSolutionEval(S& solution) { // can be overloaded in derived class, for metaheuristic management
 			return solution.getCost() + solution.getViolations();
 		}
 
 		virtual void run(){
 			iter = 0;
-			S incumbentSolution(*bestSolution);			// invokes the copy constructor
+			S currentSolution(*bestSolution);			// invokes the copy constructor
 			S neighborSolution(*bestSolution);			// invokes the copy constructor
 			while (false == terminationCondition()) {
-				neighborSolution = incumbentSolution;
+				neighborSolution = currentSolution;
 				neighborSolution.shakeSolution();
-				if (acceptanceCriterion(neighborSolution, incumbentSolution)) {
+				if (acceptanceCriterion(neighborSolution, currentSolution)) {
 					//cout << "*";
-					incumbentSolution = neighborSolution;
+					currentSolution = neighborSolution;
 					if (computeSolutionEval(neighborSolution) < computeSolutionEval(*bestSolution)) {
 						std::cout << "!" << std::flush;
-						*bestSolution = incumbentSolution;
+						*bestSolution = currentSolution;
 					} 
 				}
 				iter++;

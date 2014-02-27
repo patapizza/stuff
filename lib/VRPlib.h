@@ -36,7 +36,8 @@ public:
 	void generateInitialSolution();
 	void shakeSolution();
 	float getCost();
-	float getViolations();
+	int getViolations(int c = 0);
+	int nbConstraints();
 	std::string& toString();
 };
 
@@ -59,7 +60,8 @@ public:
 	void generateInitialSolution();
 	void shakeSolution();
 	float getCost();
-	float getViolations();
+	int getViolations(int c = 0);
+	int nbConstraints();
 
 	/* specific methods */
 	void computeServiceTimes(int k = 0);

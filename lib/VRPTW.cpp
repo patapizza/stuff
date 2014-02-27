@@ -6,7 +6,7 @@
 #include <cmath>	// sqrt
 #include <cstring>	// memcpy
 #include <limits>   // numeric_limits
-#include <iomanip>	// setw
+#include <iomanip>	// setw, setfill
 #include <algorithm>// std::max
 
 #include "VRPlib.h"
@@ -252,7 +252,7 @@ inline float solutionVRPTW::getCostR(int k) {	// returns cost of route k (all ro
 inline float solutionVRPTW::getCost() {	// returns cost of route k
 	return getCostR();
 }
-inline float solutionVRPTW::getViolations() {
+inline int solutionVRPTW::getViolations(int c) {
 	int v = 0;
 	float *load = new float [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
 	
@@ -265,11 +265,13 @@ inline float solutionVRPTW::getViolations() {
 		} 
 	}
 
-	for(int r=1; r<NVeh+1; r++) if (load[r] > Q) v ++;
-	for(int i=1; i<NVeh+N+1; i++) if (b[i]+0.000001 > l[i]) v ++;
+	if(c == 1 || c == 0) for (int r=1; r<NVeh+1; r++) if (load[r] > Q) v ++; // to try:    v += load[r] - Q
+	if(c == 2 || c == 0) for (int i=1; i<NVeh+N+1; i++) if (b[i]+0.000001 > l[i]) v ++;
 
 	return (v);
-}		
+}	
+
+inline int solutionVRPTW::nbConstraints() { return 2; } 	// only 2 soft constraints: vehicle capacity and time windows
 
 
 string& solutionVRPTW::toString() {

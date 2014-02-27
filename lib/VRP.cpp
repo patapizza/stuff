@@ -190,8 +190,8 @@ float solutionVRP::getCost() {
 
 	return (cost);
 }
-float solutionVRP::getViolations() {
-	float v = 0.0;
+int solutionVRP::getViolations(int c) {
+	int v = 0;
 	int *load = new int [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
 	
 	for (int r=1; r<NVeh+1; r++) {	// compute vehicle loads
@@ -203,10 +203,12 @@ float solutionVRP::getViolations() {
 		} 
 	}
 
-	for(int r=1; r<NVeh+1; r++) if (load[r] > Q) v += load[r] - Q;
+	if(c == 1 || c == 0) for(int r=1; r<NVeh+1; r++) if (load[r] > Q) v += load[r] - Q;
 
 	return (v);
 }		
+	
+inline int solutionVRP::nbConstraints() { return 1; } 	// only 1 soft constraint: vehicle capacity 
 
 string& solutionVRP::toString() {
 	ostringstream out;
