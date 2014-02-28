@@ -64,15 +64,17 @@ namespace CBLS {
 				neighborSolution = currentSolution;
 				neighborSolution.shakeSolution();
 				if (acceptanceCriterion(neighborSolution, currentSolution)) {
-					//cout << "*";
 					currentSolution = neighborSolution;
-					if (computeSolutionEval(neighborSolution) < computeSolutionEval(*bestSolution)) {
+					//std::cout << "*";
+					if (currentSolution.getViolations() == 0 && currentSolution.getCost() < bestSolution->getCost()) {
 						std::cout << "!" << std::flush;
 						*bestSolution = currentSolution;
 					} 
 				}
 				iter++;
 			}
+			if (bestSolution->getViolations() > 0)	// if no feasible solution found, return the current solution
+				*bestSolution = currentSolution;
 		}
 
 
