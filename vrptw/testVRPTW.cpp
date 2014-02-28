@@ -18,7 +18,7 @@ int nb_iter;
 
 void usage() {
 	cerr << "Usage is " << program_name << " nb_iter instance_file \n";
-	cerr << "Example: ./testVRPTW 1000000 ../data/cordeau/vrptw/old/c208\n";
+	cerr << "Example: ./testVRPTW 100000 ../data/cordeau/vrptw/old/c208\n";
 	exit (8);
 }
 
