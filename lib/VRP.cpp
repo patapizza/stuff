@@ -135,48 +135,8 @@ void solutionVRP::generateInitialSolution() {
 		} next[r] = n;
 	}
 }
-void solutionVRP::shakeSolution() {
-	/* Move a vertex from its position to a 
-			1) random different position 
-			2) best insert 
-		at 50-50%
-	*/
-	int vertex, before_i;
 
-	vertex = rand() % N + (NVeh + 1); // generate random number in [NVeh+1..NVeh+N]
 
-	int chance = rand() % 100 + 1;
-	if (chance < 50) {
-		do {
-			before_i = rand() % (NVeh + N) + 1; // generate random number in [1..NVeh+N]
-		} while (before_i == vertex || before_i == next[vertex]);
-	} else {
-		float min_delta = numeric_limits<float>::max();
-		for (int i=1; i<NVeh+N+1; i++) {	// find the best position to re-insert it
-			float delta = 0.0;
-			if (i == vertex || i == next[vertex]) continue;
-			delta =   c[previous[i]][i] 
-					+ c[previous[i]][vertex]
-					+ c[vertex][i];
-			if (delta < min_delta) {
-				before_i = i;
-				min_delta = delta;
-			} 
-		} 
-	}
-	//cout << "moving " << vertex-NVeh << " to before " << before_i-NVeh << endl;
-	// Remove from current position
-	previous[next[vertex]] = previous[vertex];
-	next[previous[vertex]] = next[vertex];
-
-	// Insert elsewhere
-	vehicle[vertex] = vehicle[before_i];
-	next[vertex] = before_i;
-	previous[vertex] = previous[before_i];
-	previous[before_i] = vertex;
-	next[previous[vertex]] = vertex;
-	//cout << toString();
-}
 float solutionVRP::getCost() {
 	float cost = 0.0;
 	
@@ -207,8 +167,7 @@ int solutionVRP::getViolations(int c) {
 
 	return (v);
 }		
-	
-inline int solutionVRP::nbConstraints() { return 1; } 	// only 1 soft constraint: vehicle capacity 
+
 
 string& solutionVRP::toString() {
 	ostringstream out;

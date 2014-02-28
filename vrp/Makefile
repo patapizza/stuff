@@ -2,7 +2,7 @@ CC		= g++
 CFLAGS	= -g -O0 -std=c++0x
 LIBPATH = ../lib
 SRC		= testVRP.cpp $(LIBPATH)/VRP.cpp
-INC	= $(LIBPATH)/LSBase.h $(LIBPATH)/VRPlib.h
+INC	= $(LIBPATH)/LSBase.h $(LIBPATH)/LSProgram.h $(LIBPATH)/NM.h $(LIBPATH)/VRPlib.h
 PROGS	= testVRP
 
 

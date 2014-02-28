@@ -1,4 +1,7 @@
 #include <iostream>
+#include "NM.h"
+
+
 #ifndef LSBase_H
 #define	LSBase_H
 
@@ -34,11 +37,15 @@ namespace CBLS {
 	public:
 		/* Main methods */
 		virtual void generateInitialSolution() =0; 
-		virtual void shakeSolution() =0;				// obtains a neighboring solution by disturbing the current one
 		virtual float getCost() =0;						// returns the solution cost
 		virtual int getViolations(int c = 0) =0;		// # of violations in soft constraint c (if any); c = 0 for all constraints
-		/* Misc methods */
+
+		/* Communication methods */
 		virtual int nbConstraints() =0;					// # of soft constraints in the current problem (used by LSProgram extensions)
+		virtual int* getpPrevious() =0;
+		virtual int* getpNext() =0;
+		virtual int* getpVehicle() =0;
+		virtual void routeChange(int k = 0) = 0;
 	};
 
 	template <class S> class LSProgram {
@@ -60,9 +67,10 @@ namespace CBLS {
 			iter = 0;
 			S currentSolution(*bestSolution);			// invokes the copy constructor
 			S neighborSolution(*bestSolution);			// invokes the copy constructor
+			neighborhoodManager<S> nm(&neighborSolution);
 			while (false == terminationCondition()) {
 				neighborSolution = currentSolution;
-				neighborSolution.shakeSolution();
+				nm.shakeSolution();
 				if (acceptanceCriterion(neighborSolution, currentSolution)) {
 					currentSolution = neighborSolution;
 					//std::cout << "*";

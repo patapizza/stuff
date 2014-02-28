@@ -12,6 +12,7 @@
 
 using namespace CBLS;
 
+
 /* Handles instance files of Cordeau-Laporte in data/vrp/old */
 void readInstanceFileCordeauLaporteVRPold(const char *filename);
 
@@ -33,11 +34,19 @@ public:
 	~solutionVRP();
 	//friend std::ostream &operator << (std::ostream &out_file, solutionVRP& s);
 
+	/* virtual method instanciations */
 	void generateInitialSolution();
-	void shakeSolution();
 	float getCost();
 	int getViolations(int c = 0);
-	int nbConstraints();
+
+	/* interaction methods */
+	int nbConstraints() { return 1; }
+	int* getpPrevious() { return previous; }
+	int* getpNext() { return next; }
+	int* getpVehicle() { return vehicle; }
+	void routeChange(int k = 0) {}
+
+	/* VRP specific methods */
 	std::string& toString();
 };
 
@@ -54,16 +63,21 @@ public:
 	solutionVRPTW(const solutionVRPTW& old_solution);				// copy constructor ***
 	solutionVRPTW& operator = (const solutionVRPTW& sol);
 	~solutionVRPTW();
-	friend std::ostream &operator << (std::ostream &out_file, solutionVRPTW& s);
+	//friend std::ostream &operator << (std::ostream &out_file, solutionVRPTW& s);
 
 	/* virtual method instanciations */
 	void generateInitialSolution();
-	void shakeSolution();
 	float getCost();
 	int getViolations(int c = 0);
-	int nbConstraints();
 
-	/* specific methods */
+	/* interaction methods */
+	int nbConstraints() { return 2; }
+	int* getpPrevious() { return previous; }
+	int* getpNext() { return next; }
+	int* getpVehicle() { return vehicle; }
+	void routeChange(int k = 0) { computeServiceTimes(k); }
+
+	/* VRPTW specific methods */
 	void computeServiceTimes(int k = 0);
 	float getCostR(int k = 0);
 	std::string& toString();

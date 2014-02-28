@@ -177,53 +177,7 @@ void solutionVRPTW::generateInitialSolution() {
 	}
 	computeServiceTimes();
 }
-inline void solutionVRPTW::shakeSolution() {
-	/* Move a random vertex from its position to a 
-			1) random different position 
-			2) best insert 
-		at 50-50%
-	*/
-	int vertex, before_i, from_route;
 
-	vertex = rand() % N + (NVeh + 1); // generate random number in [NVeh+1..NVeh+N] to select one customer vertex
-	from_route = vehicle[vertex];		// remember the route
-
-	int chance = rand() % 100 + 1;
-	if (chance < 30) {
-		do {
-			before_i = rand() % (NVeh + N) + 1; // generate random number in [1..NVeh+N]
-		} while (before_i == vertex || before_i == next[vertex]);
-	} else {
-		float min_delta = numeric_limits<float>::max();
-		for (int i=1; i<NVeh+N+1; i++) {	// find the best position to re-insert it
-			float delta = 0.0;
-			if (i == vertex || i == next[vertex]) continue;
-			delta =   c[previous[i]][i] 
-					+ c[previous[i]][vertex]
-					+ c[vertex][i];
-			if (delta < min_delta) {
-				before_i = i;
-				min_delta = delta;
-			} 
-		} 
-	}
-	//cout << "moving " << vertex-NVeh << " to before " << before_i-NVeh << endl;
-	// Remove from current position
-	previous[next[vertex]] = previous[vertex];
-	next[previous[vertex]] = next[vertex];
-
-	// Insert elsewhere
-	vehicle[vertex] = vehicle[before_i];
-	next[vertex] = before_i;
-	previous[vertex] = previous[before_i];
-	previous[before_i] = vertex;
-	next[previous[vertex]] = vertex;
-	//cout << toString();
-
-	computeServiceTimes(vehicle[from_route]);
-	if (vehicle[from_route] != vehicle[before_i]) 
-		computeServiceTimes(vehicle[before_i]);
-}
 
 inline void solutionVRPTW::computeServiceTimes(int k) {	// recomputes service times at route k (k==0: every routes)
 	for (int r=1; r<NVeh+1; r++) {
@@ -270,8 +224,6 @@ inline int solutionVRPTW::getViolations(int c) {
 
 	return (v);
 }	
-
-inline int solutionVRPTW::nbConstraints() { return 2; } 	// only 2 soft constraints: vehicle capacity and time windows
 
 
 string& solutionVRPTW::toString() {
