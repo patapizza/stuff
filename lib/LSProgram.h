@@ -15,7 +15,8 @@ using namespace std;
 */
 
 // Basic local search
-template <class S> class LSProgramBasic : public LSProgram<S> {
+template <class S> 
+class LSProgramBasic : public LSProgram<S> {
 protected:
 	int max_iter;
 	int diversification;
@@ -26,20 +27,21 @@ public:
 	}
 
 	bool acceptanceCriterion(S& candidateSolution, S& currentSolution) {
-		if (LSProgram<S>::computeSolutionEval(candidateSolution) 
-			< LSProgram<S>::computeSolutionEval(currentSolution)) return true;
+		if (computeSolutionEval(candidateSolution) 
+			< computeSolutionEval(currentSolution)) return true;
 		else return (rand() % 100 + 1 <= diversification);	// % diversification
 	}
 	bool terminationCondition() {
 		return (this->iter >= max_iter);		// "this->" needed to access parent protected variables
 	}
-	float computeSolutionEval(S& solution, S& currentSolution) {			// overload
-		return solution.getCost() + 100*solution.getViolations();
+	float computeSolutionEval(S& solution) {			// overload
+		return solution.getCost() + 10*solution.getViolations();
 	}
 };
 
 // Basic local search, extended with dynamic soft constraint weights adjustments
-template <class S> class LSProgramBasicDynamicWeights : public LSProgramBasic<S> {
+template <class S> 
+class LSProgramBasicDynamicWeights : public LSProgramBasic<S> {
 private:	
 	int nc;				// number of soft constraints in S
 	float *c_weight;	// soft constraints respective weights (indiced from 1 to nc)
@@ -53,8 +55,8 @@ public:
 		this->delta = delta;
 	}
 	bool acceptanceCriterion(S& candidateSolution, S& currentSolution) {
-		if (LSProgram<S>::computeSolutionEval(candidateSolution) 
-			<= LSProgram<S>::computeSolutionEval(currentSolution)) return true;
+		if (computeSolutionEval(candidateSolution) 
+			<= computeSolutionEval(currentSolution)) return true;
 		else if (rand() % 100 + 1 <= this->diversification) return true;	// % diversification
 		updatePenaltyWeights(currentSolution);
 		return false;
