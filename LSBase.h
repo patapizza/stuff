@@ -1,4 +1,6 @@
 #include <iostream>
+#include <vector> // std::vector
+#include <utility> // std::pair, std::make_pair
 
 using namespace std;
 
@@ -74,6 +76,59 @@ namespace CBLS {
 
 
 	};
+
+    template <class S> class LSTabu : LSProgram {
+    private:
+        vector<pair<int, S>> t;
+        int tenure;
+    public:
+        LSTabu(S *initialSolution) : LSProgram(S *initialSolution) {
+            LSTabu(initialSolution, 1000000, 2);
+        }
+        LSTabu(S *initialSolution, iter, tenure) {
+            this->iter = iter;
+            this->tenure = tenure;
+        }
+
+        bool terminationCondition() {
+            return this->iter == 0;
+        }
+
+        bool acceptanceCriterion(S &candidateSolution, S &incumbentSolution) {
+            return acceptanceCriterion(candidateSolution);
+        }
+
+        bool acceptanceCriterion(S &candidateSolution) {
+            for (vector<pair<int, S>>::iterator it = t.begin(); it != t.end(); ++it)
+                if (it->second == candidateSolution)
+                    return false;
+            return true;
+        }
+
+        void expire_features() {
+            int i = -1;
+            for (vector<pair<int, S>>::iterator it = t.begin(); it != t.end() && it->first - iter == tenure; ++it)
+                ++i;
+            t.erase(t.begin(), t.begin() + i);
+        }
+
+        void run() {
+            S candidateSolution(*bestSolution);
+            while (false == terminationCondition()) {
+                vector<S> neighbors = candidateSolution.fullNeighborhood();
+                vector<S> legal;
+                for (vector<S>::iterator it = neighbors.begin(); it != neighbors.end(); ++it)
+                    if (acceptanceCriterion(*it))
+                        legal.push_back(*it);
+                candidateSolution = candidateSelection(legal);
+                if (candidateSolution.getEval() < bestSolution->getEval())
+                    *bestSolution = candidateSolution;
+                t.push_back(make_pair(this->iter, candidateSolution));
+                expire_features();
+                --(this->iter);
+            }
+        }
+    };
 
 }
 
