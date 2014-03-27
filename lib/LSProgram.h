@@ -55,9 +55,11 @@ public:
 		this->delta = delta;
 	}
 	bool acceptanceCriterion(S& candidateSolution, S& currentSolution) {
-		if (computeSolutionEval(candidateSolution) 
-			<= computeSolutionEval(currentSolution)) return true;
-		else if (rand() % 100 + 1 <= this->diversification) return true;	// % diversification
+		if (	computeSolutionEval(candidateSolution) <= computeSolutionEval(currentSolution)
+			||	rand() % 100 + 1 <= this->diversification ) {		// % diversification
+			//for (int i=1; i<=nc; i++) c_weight[i] = 1.0;
+			return true;
+		} 	
 		updatePenaltyWeights(currentSolution);
 		return false;
 	}
@@ -74,6 +76,7 @@ public:
 			else 										// otherwise
 				c_weight[c] /= 1 + delta; 				// delta% decrease
 		}
+		//printWeights();
 	}
 	void printWeights() {
 		for (int c=1; c<=nc; c++)

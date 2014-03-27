@@ -24,6 +24,8 @@ public:
 };
 
 
+/* implementation ---------------------------------------------------------(in header because of template)- */
+
 template <class S>
 neighborhoodManager<S>::neighborhoodManager(S* solution){
 	this->solution = solution;
@@ -40,9 +42,8 @@ neighborhoodManager<S>::~neighborhoodManager(){
 template <class S>
 void neighborhoodManager<S>::shakeSolution(){
 	/* Move a random vertex from its position to a 
-			1) random different position 
-			2) best insert 
-		at 50-50%
+			1) random different position (10%)
+			2) best insert (90%)
 	*/
 	int vertex, before_i, from_route;
 
@@ -50,11 +51,11 @@ void neighborhoodManager<S>::shakeSolution(){
 	from_route = veh[vertex];		// remember the route
 
 	int chance = rand() % 100 + 1;
-	if (chance < 50) {
+	if (chance < 10) {	// 1)
 		do {
 			before_i = rand() % (NVeh + N) + 1; // generate random number in [1..NVeh+N]
 		} while (before_i == vertex || before_i == next[vertex]);
-	} else {
+	} else {			// 2)
 		float min_delta = numeric_limits<float>::max();
 		for (int i=1; i<NVeh+N+1; i++) {	// find the best position to re-insert it
 			float delta = 0.0;

@@ -36,8 +36,10 @@ int main(int argc, char *argv[]) {
 	solutionVRP s;
 	cout << "Initial solution: " << endl << s.toString() << endl << flush;
 
-	LSProgramBasic<solutionVRP> p(&s, nb_iter, 3);
+	//LSProgramBasic<solutionVRP> p(&s, nb_iter, 3);
+	LSProgramBasicDynamicWeights<solutionVRP> p(&s, nb_iter, 1, 0.01);
 	cout << "Running LS program" << endl;
 	p.run();
 	cout << endl << "Terminated. Best solution found: \n" << s.toString() << endl;
+	p.printWeights();
 }

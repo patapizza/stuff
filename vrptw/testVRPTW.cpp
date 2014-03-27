@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) {
 	solutionVRPTW s;
 	cout << "Initial solution: " << endl << s.toString() << endl << flush;
 
+	//LSProgramBasic<solutionVRPTW> p(&s, nb_iter, 1); // 1% diversification
 	LSProgramBasicDynamicWeights<solutionVRPTW> p(&s, nb_iter, 1, 0.001); // 1% diversification, delta=0.001
 	cout << "Running LS program" << endl;
 	p.run(); 
