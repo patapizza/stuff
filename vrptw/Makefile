@@ -1,5 +1,5 @@
 CC		= g++
-CFLAGS	= -g -O0 -std=c++0x
+CFLAGS	= -g -O0 
 LIBPATH = ../lib
 SRC		= testVRPTW.cpp $(LIBPATH)/VRPTW.cpp 
 INC	= $(LIBPATH)/LSBase.h $(LIBPATH)/LSProgram.h $(LIBPATH)/NM.h $(LIBPATH)/VRPlib.h 
