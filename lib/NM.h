@@ -3,6 +3,8 @@
 #ifndef NM_H
 #define	NM_H
 
+#include <limits> // numeric_limits
+
 
 using namespace std;
 

@@ -4,6 +4,7 @@
 #include <ctime>	// time
 #include <cmath>	// sqrt
 #include <cstring>	// memcpy
+#include <string> 	// stoi
 
 #include "../lib/VRPlib.h"
 #include "../lib/LSProgram.h"
