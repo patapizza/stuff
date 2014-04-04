@@ -156,8 +156,11 @@ solutionVRPTW::~solutionVRPTW() {										// destructor ***
 
 void solutionVRPTW::generateInitialSolution() {
 	int *last = new int [NVeh+1];
-	for(int r=1; r<NVeh+1; r++)	last[r] = r;
-	vehicle[0] = 0;
+	for(int r=1; r<NVeh+1; r++)	{
+		vehicle[r] = r;
+		last[r] = r;
+	}
+	
 	/* Assign random values */
 	for (int i=NVeh+1; i<NVeh+N+1; i++) {
 		int r = rand() % NVeh + 1;
@@ -176,6 +179,7 @@ void solutionVRPTW::generateInitialSolution() {
 		} next[r] = n;
 	}
 	computeServiceTimes();
+	delete [] last;
 }
 
 

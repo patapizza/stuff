@@ -26,7 +26,7 @@ private:
 	/* Decision variables */
 	int *previous;		// previous[i] = j iff vertex j is visited before i in the same route
 	int *next;			// !!! -> Numbered from 1 to N
-	int *vehicle;		// vehicle[i] = j iff vertex j is serviced by vehicle i
+	int *vehicle;		// vehicle[i] = j iff vertex i is serviced by vehicle j
 public:
 	solutionVRP();												// constructor ***
 	solutionVRP(const solutionVRP& old_solution);				// copy constructor ***
@@ -56,7 +56,7 @@ private:
 	/* Decision variables */
 	int *previous;		// previous[i] = j iff vertex j is visited before i in the same route
 	int *next;			// !!! -> Numbered from 1 to N
-	int *vehicle;		// vehicle[i] = j iff vertex j is serviced by vehicle i
+	int *vehicle;		// vehicle[i] = j iff vertex i is serviced by vehicle j
 	float *b;			// service times
 public:
 	solutionVRPTW();												// constructor ***

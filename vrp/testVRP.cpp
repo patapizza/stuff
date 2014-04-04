@@ -42,5 +42,5 @@ int main(int argc, char *argv[]) {
 	cout << "Running LS program" << endl;
 	p.run();
 	cout << endl << "Terminated. Best solution found: \n" << s.toString() << endl;
-	p.printWeights();
+	p.printWeights();	// remove if not DynamicWeights !!
 }
