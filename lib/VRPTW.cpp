@@ -256,7 +256,7 @@ string& solutionVRPTW::toString() {
 		for(int i=next[r], n=1; i!=r; i=next[i], n++) {
 			out << setw(3) << i-NVeh << "[" << misc::redExpr(b[i]>l[i]) << setw(7) << setfill('0') 
 				<< b[i] << misc::resetColor() << "]" << " " << setfill(' ');
-			if ((n%8) == 0) out << endl << "\t\t\t\t\t";
+			if ((n%7) == 0) out << endl << "\t\t\t\t\t";
 		}
 		out << "  D" << "[" << misc::redExpr(b[r]>l[r]) << setw(7) << setfill('0') << b[r] << misc::resetColor() << "]" << endl << setfill(' ');
 	}
