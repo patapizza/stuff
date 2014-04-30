@@ -140,6 +140,26 @@ void solutionVRP::generateInitialSolution() {
 	delete [] last;
 }
 
+/* bestInsertion(int vertex)
+	Find the best position to REinstert a single vertex "vertex"
+*/
+int solutionVRP::bestInsertion(int vertex) {
+	int before_i;
+	float min_delta = numeric_limits<float>::max();
+	for (int i=1; i<NVeh+N+1; i++) {
+		float delta = 0.0;
+		if (i == vertex || i == next[vertex]) continue;
+		delta =   c[previous[i]][i] 
+				+ c[previous[i]][vertex]
+				+ c[vertex][i];
+		if (delta < min_delta) {
+			before_i = i;
+			min_delta = delta;
+		} 
+	} 
+	return before_i;
+}
+
 
 float solutionVRP::getCost() {
 	float cost = 0.0;

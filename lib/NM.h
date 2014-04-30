@@ -3,8 +3,6 @@
 #ifndef NM_H
 #define	NM_H
 
-#include <limits> // numeric_limits
-
 
 using namespace std;
 
@@ -58,18 +56,7 @@ void neighborhoodManager<S>::shakeSolution(){
 			before_i = rand() % (NVeh + N) + 1; // generate random number in [1..NVeh+N]
 		} while (before_i == vertex || before_i == next[vertex]);
 	} else {			// 2)
-		float min_delta = numeric_limits<float>::max();
-		for (int i=1; i<NVeh+N+1; i++) {	// find the best position to re-insert it
-			float delta = 0.0;
-			if (i == vertex || i == next[vertex]) continue;
-			delta =   c[prev[i]][i] 
-					+ c[prev[i]][vertex]
-					+ c[vertex][i];
-			if (delta < min_delta) {
-				before_i = i;
-				min_delta = delta;
-			} 
-		} 
+		before_i = solution->bestInsertion(vertex); 	// find the best position to re-insert it		
 	}
 	//cout << "moving " << vertex-NVeh << " to before " << before_i-NVeh << endl;
 	// Remove from current position

@@ -36,6 +36,7 @@ public:
 
 	/* virtual method instanciations */
 	void generateInitialSolution();
+	int bestInsertion(int vertex);
 	float getCost();
 	int getViolations(int c = 0);
 
@@ -67,6 +68,7 @@ public:
 
 	/* virtual method instanciations */
 	void generateInitialSolution();
+	int bestInsertion(int vertex);
 	float getCost();
 	int getViolations(int c = 0);
 
