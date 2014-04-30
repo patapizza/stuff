@@ -89,7 +89,8 @@ inline std::ostream &operator << (std::ostream &out_file, solutionTSP& s) {
 solutionVRP::solutionVRP() {											// constructor ***
 	previous = new int[NVeh+N+1];	// vertices from 1 to NVeh + N
 	next = new int[NVeh+N+1];
-	vehicle = new int[NVeh+N+1];	// vertices from 1 to Nveh + Nveh 	// vehicle[i] = 0 iff i is a depot
+	vehicle = new int[NVeh+N+1];	// vertices from 1 to Nveh + Nveh 	// vehicle[i] = i iff i is a depot
+									//										vehicle[i] = 0 iff i is not inserted
 
 	cout << "Generating initial solution ..." << flush;
 	generateInitialSolution();
@@ -113,20 +114,48 @@ solutionVRP::~solutionVRP() {										// destructor ***
 	delete [] vehicle;
 }
 
-void solutionVRP::generateInitialSolution() {
+void solutionVRP::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
+												// todo: random vertex selection for insertion
+	for(int r=1; r<NVeh+1; r++)	{
+		vehicle[r] = r;
+		previous[r] = r;
+		next[r] = r;
+	}
+
+	/* To begin with, no customer vertex inserted */
+	for (int i=NVeh+1; i<NVeh+N+1; i++) vehicle[i] = 0; 
+
+	/* Then assign best insertion to each customer vertex in turn */
+	for (int i=NVeh+1; i<NVeh+N+1; i++) {
+		int before_i = bestInsertion(i);
+
+		insertVertex(i, before_i, false);
+
+	}
+
+}
+
+/*
+void solutionVRP::generateInitialSolution() {		// RANDOM INITIAL SOL
 	int *last = new int [NVeh+1];
 	for(int r=1; r<NVeh+1; r++)	{
 		vehicle[r] = r;
 		last[r] = r;
 	}
+
+	//To begin with, no customer vertex inserted
+	for (int i=NVeh+1; i<NVeh+N+1; i++) vehicle[i] = 0; 
 	
-	/* Assign random values */
+	//Then assign random vehicles to each customer vertex
 	for (int i=NVeh+1; i<NVeh+N+1; i++) {
 		int r = rand() % NVeh + 1;
 		vehicle[i] = r;
 		previous[i] = last[r];
 		last[r] = i;
 	}
+	
+
+	// Setting next[] values 
 	for (int r=1; r<NVeh+1; r++) {
 		int n = r;
 		int i = last[r];
@@ -139,6 +168,7 @@ void solutionVRP::generateInitialSolution() {
 	}
 	delete [] last;
 }
+*/
 
 /* bestInsertion(int vertex)
 	Find the best position to REinstert a single vertex "vertex"
@@ -148,7 +178,8 @@ int solutionVRP::bestInsertion(int vertex) {
 	float min_delta = numeric_limits<float>::max();
 	for (int i=1; i<NVeh+N+1; i++) {
 		float delta = 0.0;
-		if (i == vertex || i == next[vertex]) continue;
+		if (i == vertex || i == next[vertex]) continue; // skip if same position
+		if (vehicle[i] == 0) continue; // skip if vertex i not inserted yet
 		delta =   c[previous[i]][i] 
 				+ c[previous[i]][vertex]
 				+ c[vertex][i];
@@ -158,6 +189,30 @@ int solutionVRP::bestInsertion(int vertex) {
 		} 
 	} 
 	return before_i;
+}
+
+
+void solutionVRP::insertVertex(int vertex, int before_i, bool remove) {
+	//cout << "moving " << vertex-NVeh << " to before " << before_i-NVeh << endl;
+	int from_route = vehicle[vertex];		// remember the route
+
+	// Remove from current position
+	if (remove) {
+		previous[next[vertex]] = previous[vertex];
+		next[previous[vertex]] = next[vertex];
+	}
+
+	// Insert elsewhere
+	vehicle[vertex] = vehicle[before_i];
+	next[vertex] = before_i;
+	previous[vertex] = previous[before_i];
+	previous[before_i] = vertex;
+	next[previous[vertex]] = vertex;
+
+	// notify solution that some routes changed
+	routeChange(from_route); 
+	if (from_route != vehicle[before_i]) 
+		routeChange(vehicle[before_i]);
 }
 
 
@@ -174,7 +229,7 @@ float solutionVRP::getCost() {
 
 	return (cost);
 }
-int solutionVRP::getViolations(int c) {
+int solutionVRP::getViolations(int constraint) {
 	int v = 0;
 	int *load = new int [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
 	
@@ -187,7 +242,7 @@ int solutionVRP::getViolations(int c) {
 		} 
 	}
 
-	if(c == 1 || c == 0) for(int r=1; r<NVeh+1; r++) if (load[r] > Q) v += load[r] - Q;
+	if(constraint == 1 || constraint == 0) for(int r=1; r<NVeh+1; r++) if (load[r] > Q) v += load[r] - Q;
 
 	return (v);
 }		

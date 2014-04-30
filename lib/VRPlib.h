@@ -37,8 +37,9 @@ public:
 	/* virtual method instanciations */
 	void generateInitialSolution();
 	int bestInsertion(int vertex);
+	void insertVertex(int vertex, int before_i, bool remove);
 	float getCost();
-	int getViolations(int c = 0);
+	int getViolations(int constraint = 0);
 
 	/* interaction methods */
 	int nbConstraints() { return 1; }
@@ -69,8 +70,9 @@ public:
 	/* virtual method instanciations */
 	void generateInitialSolution();
 	int bestInsertion(int vertex);
+	void insertVertex(int vertex, int before_i, bool remove);
 	float getCost();
-	int getViolations(int c = 0);
+	int getViolations(int constraint = 0);
 
 	/* interaction methods */
 	int nbConstraints() { return 2; }

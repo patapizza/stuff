@@ -127,7 +127,8 @@ inline std::ostream &operator << (std::ostream &out_file, solutionTSP& s) {
 solutionVRPTW::solutionVRPTW() {											// constructor ***
 	previous = new int[NVeh+N+1];	// vertices from 1 to NVeh + N (i.e. for every vehicle depot and customer vertices)
 	next = new int[NVeh+N+1];
-	vehicle = new int[NVeh+N+1];	// vertices from 1 to Nveh + Nveh 	  vehicle[i] = 0 iff i is a depot
+	vehicle = new int[NVeh+N+1];	// vertices from 1 to Nveh + Nveh 	  	vehicle[i] = i iff i is a depot
+									//										vehicle[i] = 0 iff i is not inserted
 	b = new float[NVeh+N+1];		// service times for every vehicle depot and customer vertices
 
 	cout << "Generating initial solution ..." << flush;
@@ -155,14 +156,36 @@ solutionVRPTW::~solutionVRPTW() {										// destructor ***
 	delete [] b;
 }
 
-void solutionVRPTW::generateInitialSolution() {
+void solutionVRPTW::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
+												// todo: random vertex selection for insertion
+	for(int r=1; r<NVeh+1; r++)	{
+		vehicle[r] = r;
+		previous[r] = r;
+		next[r] = r;
+	}
+
+	/* To begin with, no customer vertex inserted */
+	for (int i=NVeh+1; i<NVeh+N+1; i++) vehicle[i] = 0; 
+
+	/* Then assign best insertion to each customer vertex in turn */
+	for (int i=NVeh+1; i<NVeh+N+1; i++) {
+		int before_i = bestInsertion(i);
+
+		insertVertex(i, before_i, false);
+
+	}
+	computeServiceTimes();
+}
+
+/*
+void solutionVRPTW::generateInitialSolution() {		// RANDOM INITIAL SOL
 	int *last = new int [NVeh+1];
 	for(int r=1; r<NVeh+1; r++)	{
 		vehicle[r] = r;
 		last[r] = r;
 	}
 	
-	/* Assign random values */
+	// Assign random values 
 	for (int i=NVeh+1; i<NVeh+N+1; i++) {
 		int r = rand() % NVeh + 1;
 		vehicle[i] = r;
@@ -181,7 +204,7 @@ void solutionVRPTW::generateInitialSolution() {
 	}
 	computeServiceTimes();
 	delete [] last;
-}
+}*/
 
 /* bestInsertion(int vertex)
 	Find the best position to REinstert a single vertex "vertex"
@@ -191,7 +214,8 @@ int solutionVRPTW::bestInsertion(int vertex) {
 	float min_delta = numeric_limits<float>::max();
 	for (int i=1; i<NVeh+N+1; i++) {
 		float delta = 0.0;
-		if (i == vertex || i == next[vertex]) continue;
+		if (i == vertex || i == next[vertex]) continue;	// skip if same position
+		if (vehicle[i] == 0) continue; // skip if vertex i not inserted yet
 		delta =   c[previous[i]][i] 
 				+ c[previous[i]][vertex]
 				+ c[vertex][i];
@@ -203,6 +227,29 @@ int solutionVRPTW::bestInsertion(int vertex) {
 	return before_i;
 }
 
+
+void solutionVRPTW::insertVertex(int vertex, int before_i, bool remove) {
+	//cout << "moving " << vertex-NVeh << " to before " << before_i-NVeh << endl;
+	int from_route = vehicle[vertex];		// remember the route
+
+	// Remove from current position
+	if (remove) {
+		previous[next[vertex]] = previous[vertex];
+		next[previous[vertex]] = next[vertex];
+	}
+
+	// Insert elsewhere
+	vehicle[vertex] = vehicle[before_i];
+	next[vertex] = before_i;
+	previous[vertex] = previous[before_i];
+	previous[before_i] = vertex;
+	next[previous[vertex]] = vertex;
+
+	// notify solution that some routes changed
+	routeChange(from_route); 
+	if (from_route != vehicle[before_i]) 
+		routeChange(vehicle[before_i]);
+}
 
 inline void solutionVRPTW::computeServiceTimes(int k) {	// recomputes service times at route k (k==0: every routes)
 	for (int r=1; r<NVeh+1; r++) {
@@ -231,7 +278,7 @@ inline float solutionVRPTW::getCostR(int k) {	// returns cost of route k (all ro
 inline float solutionVRPTW::getCost() {	// returns cost of route k
 	return getCostR();
 }
-inline int solutionVRPTW::getViolations(int c) {
+inline int solutionVRPTW::getViolations(int constraint) {
 	int v = 0;
 	float *load = new float [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
 	
@@ -244,8 +291,8 @@ inline int solutionVRPTW::getViolations(int c) {
 		} 
 	}
 
-	if(c == 1 || c == 0) for (int r=1; r<NVeh+1; r++) if (load[r] > Q) v ++; // to try:    v += load[r] - Q
-	if(c == 2 || c == 0) for (int i=1; i<NVeh+N+1; i++) if (b[i]+0.000001 > l[i]) v ++;
+	if(constraint == 1 || constraint == 0) for (int r=1; r<NVeh+1; r++) if (load[r] > Q) v ++; // to try:    v += load[r] - Q
+	if(constraint == 2 || constraint == 0) for (int i=1; i<NVeh+N+1; i++) if (b[i]+0.000001 > l[i]) v ++;
 
 	return (v);
 }	
