@@ -35,6 +35,9 @@ int main(int argc, char *argv[]) {
 	cout << "Reading instance file..." << flush;
 	readInstanceFileCordeauLaporteVRPTWold(instance_file); cout << "Done." << endl << flush;
 	solutionVRPTW s;
+	cout << "Generating initial VRP solution ..." << flush;
+	s.generateInitialSolution();
+	cout << "Done.\n" << flush; 
 	cout << "Initial solution: " << endl << s.toString() << endl << flush;
 
 	//LSProgramBasic<solutionVRPTW> p(&s, nb_iter, 1); // 1% diversification

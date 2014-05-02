@@ -92,10 +92,7 @@ solutionVRP::solutionVRP() {											// constructor ***
 	vehicle = new int[NVeh+N+1];	// vertices from 1 to Nveh + Nveh 	// vehicle[i] = i iff i is a depot
 									//										vehicle[i] = 0 iff i is not inserted
 
-	cout << "Generating initial solution ..." << flush;
-	generateInitialSolution();
-	cout << "Done.\n" << flush; 
-}
+	}
 solutionVRP::solutionVRP(const solutionVRP& old_solution) {				// copy constructor ***
 	previous = new int[NVeh+N+1];
 	next = new int[NVeh+N+1];
@@ -130,45 +127,8 @@ void solutionVRP::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
 		int before_i = bestInsertion(i);
 
 		insertVertex(i, before_i, false);
-
 	}
-
 }
-
-/*
-void solutionVRP::generateInitialSolution() {		// RANDOM INITIAL SOL
-	int *last = new int [NVeh+1];
-	for(int r=1; r<NVeh+1; r++)	{
-		vehicle[r] = r;
-		last[r] = r;
-	}
-
-	//To begin with, no customer vertex inserted
-	for (int i=NVeh+1; i<NVeh+N+1; i++) vehicle[i] = 0; 
-	
-	//Then assign random vehicles to each customer vertex
-	for (int i=NVeh+1; i<NVeh+N+1; i++) {
-		int r = rand() % NVeh + 1;
-		vehicle[i] = r;
-		previous[i] = last[r];
-		last[r] = i;
-	}
-	
-
-	// Setting next[] values 
-	for (int r=1; r<NVeh+1; r++) {
-		int n = r;
-		int i = last[r];
-		previous[r] = last[r];
-		while (i != r) {
-			next[i] = n;
-			n = i;
-			i=previous[i];
-		} next[r] = n;
-	}
-	delete [] last;
-}
-*/
 
 /* bestInsertion(int vertex)
 	Find the best position to REinstert a single vertex "vertex"
@@ -210,25 +170,24 @@ void solutionVRP::insertVertex(int vertex, int before_i, bool remove) {
 	next[previous[vertex]] = vertex;
 
 	// notify solution that some routes changed
-	routeChange(from_route); 
+	if (remove) this->routeChange(from_route); 
 	if (from_route != vehicle[before_i]) 
-		routeChange(vehicle[before_i]);
+		this->routeChange(vehicle[before_i]);
 }
 
-
-float solutionVRP::getCost() {
+inline float solutionVRP::getCost(int k) {	// returns cost of route k (all route cost of k==0)
 	float cost = 0.0;
-	
 	for (int r=1; r<NVeh+1; r++) {
+		if (k != 0 && k != r) continue;
 		int i = previous[r];
 		while (i != r) {
 			cost += c[i][next[i]];
 			i=previous[i];
 		} cost += c[i][next[i]];
 	}
-
 	return (cost);
 }
+
 int solutionVRP::getViolations(int constraint) {
 	int v = 0;
 	int *load = new int [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x

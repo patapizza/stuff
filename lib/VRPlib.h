@@ -21,8 +21,8 @@ void readInstanceFileCordeauLaporteVRPTWold(const char *filename);
 
 
 
-class solutionVRP: public solution {
-private:
+class solutionVRP {
+protected:
 	/* Decision variables */
 	int *previous;		// previous[i] = j iff vertex j is visited before i in the same route
 	int *next;			// !!! -> Numbered from 1 to N
@@ -34,11 +34,11 @@ public:
 	~solutionVRP();
 	//friend std::ostream &operator << (std::ostream &out_file, solutionVRP& s);
 
-	/* virtual method instanciations */
+	/* general methods */
 	void generateInitialSolution();
 	int bestInsertion(int vertex);
 	void insertVertex(int vertex, int before_i, bool remove);
-	float getCost();
+	float getCost(int k = 0);
 	int getViolations(int constraint = 0);
 
 	/* interaction methods */
@@ -46,19 +46,21 @@ public:
 	int* getpPrevious() { return previous; }
 	int* getpNext() { return next; }
 	int* getpVehicle() { return vehicle; }
-	void routeChange(int k = 0) {}
+	virtual void routeChange(int k = 0) {}
 
 	/* VRP specific methods */
 	std::string& toString();
 };
 
 
-class solutionVRPTW: public solution {
+class solutionVRPTW: public solutionVRP {
 private:
 	/* Decision variables */
+	/*
 	int *previous;		// previous[i] = j iff vertex j is visited before i in the same route
 	int *next;			// !!! -> Numbered from 1 to N
 	int *vehicle;		// vehicle[i] = j iff vertex i is serviced by vehicle j
+	*/
 	float *b;			// service times
 public:
 	solutionVRPTW();												// constructor ***
@@ -67,23 +69,16 @@ public:
 	~solutionVRPTW();
 	//friend std::ostream &operator << (std::ostream &out_file, solutionVRPTW& s);
 
-	/* virtual method instanciations */
-	void generateInitialSolution();
+	/* general methods */
 	int bestInsertion(int vertex);
-	void insertVertex(int vertex, int before_i, bool remove);
-	float getCost();
 	int getViolations(int constraint = 0);
 
 	/* interaction methods */
 	int nbConstraints() { return 2; }
-	int* getpPrevious() { return previous; }
-	int* getpNext() { return next; }
-	int* getpVehicle() { return vehicle; }
-	void routeChange(int k = 0) { computeServiceTimes(k); }
+	virtual void routeChange(int k = 0) { computeServiceTimes(k); }
 
 	/* VRPTW specific methods */
 	void computeServiceTimes(int k = 0);
-	float getCostR(int k = 0);
 	std::string& toString();
 };
 

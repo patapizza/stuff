@@ -17,7 +17,7 @@ $(PROGS): $(OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm $(PROGS) *.o 
+	rm $(PROGS) *.o $(LIBPATH)/*.o
 
 
 .PHONY: clean

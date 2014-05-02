@@ -35,6 +35,9 @@ int main(int argc, char *argv[]) {
 	srand(t);
 	readInstanceFileCordeauLaporteVRPold(instance_file); 
 	solutionVRP s;
+	cout << "Generating initial VRP solution ..." << flush;
+	s.generateInitialSolution();
+	cout << "Done.\n" << flush; 
 	cout << "Initial solution: " << endl << s.toString() << endl << flush;
 
 	//LSProgramBasic<solutionVRP> p(&s, nb_iter, 3);

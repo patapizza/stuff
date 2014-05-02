@@ -16,14 +16,14 @@ using namespace std;
 
 
 /* Problem data variables */
-int N;			// number of customer vertices, numbered: [NVeh+1..NVeh+N]
-int NVeh;		// number of vehicles, numbered: [1..NVeh]
-int Q;			// vehicle max capacity
-double **c;		// travel costs/durations
-float *coordX; 
-float *coordY;
+extern int N;			// number of customer vertices, numbered: [NVeh+1..NVeh+N]
+extern int NVeh;		// number of vehicles, numbered: [1..NVeh]
+extern int Q;			// vehicle max capacity
+extern double **c;		// travel costs/durations
+extern float *coordX; 
+extern float *coordY;
+extern float *demand;		// demand et each vertex
 float *duration;	// service duration at each vertex
-float *demand;		// demand et each vertex
 int   *e;			// start of time window at each vertex
 int   *l;			// end of time window at each vertex
 
@@ -124,21 +124,12 @@ inline std::ostream &operator << (std::ostream &out_file, solutionTSP& s) {
 /* class solutionVRPTW ********************************************************************************************
 *	defines a solution for a TSP 
 */
-solutionVRPTW::solutionVRPTW() {											// constructor ***
-	previous = new int[NVeh+N+1];	// vertices from 1 to NVeh + N (i.e. for every vehicle depot and customer vertices)
-	next = new int[NVeh+N+1];
-	vehicle = new int[NVeh+N+1];	// vertices from 1 to Nveh + Nveh 	  	vehicle[i] = i iff i is a depot
-									//										vehicle[i] = 0 iff i is not inserted
+solutionVRPTW::solutionVRPTW() {									// constructor ***
 	b = new float[NVeh+N+1];		// service times for every vehicle depot and customer vertices
 
-	cout << "Generating initial solution ..." << flush;
-	generateInitialSolution();
 	cout << "Done.\n" << flush; 
 }
 solutionVRPTW::solutionVRPTW(const solutionVRPTW& old_solution) {				// copy constructor ***
-	previous = new int[NVeh+N+1];
-	next = new int[NVeh+N+1];
-	vehicle = new int[NVeh+N+1];
 	b = new float[NVeh+N+1];
 	*this = old_solution;
 }
@@ -150,61 +141,9 @@ solutionVRPTW& solutionVRPTW::operator = (const solutionVRPTW& sol) {
 	return (*this);
 }
 solutionVRPTW::~solutionVRPTW() {										// destructor ***
-	delete [] previous;
-	delete [] next;
-	delete [] vehicle;
 	delete [] b;
 }
 
-void solutionVRPTW::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
-												// todo: random vertex selection for insertion
-	for(int r=1; r<NVeh+1; r++)	{
-		vehicle[r] = r;
-		previous[r] = r;
-		next[r] = r;
-	}
-
-	/* To begin with, no customer vertex inserted */
-	for (int i=NVeh+1; i<NVeh+N+1; i++) vehicle[i] = 0; 
-
-	/* Then assign best insertion to each customer vertex in turn */
-	for (int i=NVeh+1; i<NVeh+N+1; i++) {
-		int before_i = bestInsertion(i);
-
-		insertVertex(i, before_i, false);
-
-	}
-	computeServiceTimes();
-}
-
-/*
-void solutionVRPTW::generateInitialSolution() {		// RANDOM INITIAL SOL
-	int *last = new int [NVeh+1];
-	for(int r=1; r<NVeh+1; r++)	{
-		vehicle[r] = r;
-		last[r] = r;
-	}
-	
-	// Assign random values 
-	for (int i=NVeh+1; i<NVeh+N+1; i++) {
-		int r = rand() % NVeh + 1;
-		vehicle[i] = r;
-		previous[i] = last[r];
-		last[r] = i;
-	}
-	for (int r=1; r<NVeh+1; r++) {
-		int n = r;
-		int i = last[r];
-		previous[r] = last[r];
-		while (i != r) {
-			next[i] = n;
-			n = i;
-			i=previous[i];
-		} next[r] = n;
-	}
-	computeServiceTimes();
-	delete [] last;
-}*/
 
 /* bestInsertion(int vertex)
 	Find the best position to REinstert a single vertex "vertex"
@@ -228,29 +167,6 @@ int solutionVRPTW::bestInsertion(int vertex) {
 }
 
 
-void solutionVRPTW::insertVertex(int vertex, int before_i, bool remove) {
-	//cout << "moving " << vertex-NVeh << " to before " << before_i-NVeh << endl;
-	int from_route = vehicle[vertex];		// remember the route
-
-	// Remove from current position
-	if (remove) {
-		previous[next[vertex]] = previous[vertex];
-		next[previous[vertex]] = next[vertex];
-	}
-
-	// Insert elsewhere
-	vehicle[vertex] = vehicle[before_i];
-	next[vertex] = before_i;
-	previous[vertex] = previous[before_i];
-	previous[before_i] = vertex;
-	next[previous[vertex]] = vertex;
-
-	// notify solution that some routes changed
-	routeChange(from_route); 
-	if (from_route != vehicle[before_i]) 
-		routeChange(vehicle[before_i]);
-}
-
 inline void solutionVRPTW::computeServiceTimes(int k) {	// recomputes service times at route k (k==0: every routes)
 	for (int r=1; r<NVeh+1; r++) {
 		if (k != 0 && k != r) continue;
@@ -263,35 +179,10 @@ inline void solutionVRPTW::computeServiceTimes(int k) {	// recomputes service ti
 	}
 }
 
-inline float solutionVRPTW::getCostR(int k) {	// returns cost of route k (all route cost of k==0)
-	float cost = 0.0;
-	for (int r=1; r<NVeh+1; r++) {
-		if (k != 0 && k != r) continue;
-		int i = previous[r];
-		while (i != r) {
-			cost += c[i][next[i]];
-			i=previous[i];
-		} cost += c[i][next[i]];
-	}
-	return (cost);
-}
-inline float solutionVRPTW::getCost() {	// returns cost of route k
-	return getCostR();
-}
-inline int solutionVRPTW::getViolations(int constraint) {
-	int v = 0;
-	float *load = new float [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
-	
-	for (int r=1; r<NVeh+1; r++) {	// compute vehicle loads
-		int i = previous[r];
-		load[r] = 0;
-		while (i != r) {
-			load[r] += demand[i];
-			i=previous[i];
-		} 
-	}
 
-	if(constraint == 1 || constraint == 0) for (int r=1; r<NVeh+1; r++) if (load[r] > Q) v ++; // to try:    v += load[r] - Q
+inline int solutionVRPTW::getViolations(int constraint) {
+	int v = solutionVRP::getViolations(constraint);
+
 	if(constraint == 2 || constraint == 0) for (int i=1; i<NVeh+N+1; i++) if (b[i]+0.000001 > l[i]) v ++;
 
 	return (v);
@@ -319,7 +210,7 @@ string& solutionVRPTW::toString() {
 	if (getViolations() > 0) out << "\033[0;31mInfeasible ! Violations: " << getViolations() << "\033[0;0m" << endl;
 	out << "Cost = " << getCost() << " \n";
 	for(int r=1; r<NVeh+1; r++) {
-		out << "Route " << setw(2) << r << " (c:" << setw(7) << getCostR(r) 
+		out << "Route " << setw(2) << r << " (c:" << setw(7) << getCost(r) 
 			<< " q:" << misc::redExpr(load[r]>Q) << setw(7) << load[r] << misc::resetColor() << "): D \t";
 		for(int i=next[r], n=1; i!=r; i=next[i], n++) {
 			out << setw(3) << i-NVeh << "[" << misc::redExpr(b[i]>l[i]) << setw(7) << setfill('0') 

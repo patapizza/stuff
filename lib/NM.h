@@ -45,9 +45,10 @@ void neighborhoodManager<S>::shakeSolution(){
 			1) random different position (10%)
 			2) best insert (90%)
 	*/
-	int vertex, before_i;
+	int vertex, before_i, from_route;
 
 	vertex = rand() % N + (NVeh + 1); // generate random number in [NVeh+1..NVeh+N] to select one customer vertex
+	from_route = veh[vertex]; 
 
 	int chance = rand() % 100 + 1;
 	if (chance < 10) {	// 1)
@@ -60,6 +61,14 @@ void neighborhoodManager<S>::shakeSolution(){
 
 
 	solution->insertVertex(vertex, before_i, true);
+
+
+	/*
+	// notify solution that some routes changed
+	solution->routeChange(from_route); 
+	if (from_route != veh[before_i]) 
+		solution->routeChange(veh[before_i]);
+	*/
 }
 
 

@@ -33,20 +33,23 @@ namespace CBLS {
 
 	};
 */
+
+	/*
 	class solution {
 	public:
-		/* Main methods */
+		// Main methods 
 		virtual void generateInitialSolution() =0; 
 		virtual float getCost() =0;						// returns the solution cost
 		virtual int getViolations(int c = 0) =0;		// # of violations in soft constraint c (if any); c = 0 for all constraints
 
-		/* Communication methods */
+		// Communication methods
 		virtual int nbConstraints() =0;					// # of soft constraints in the current problem (used by LSProgram extensions)
 		virtual int* getpPrevious() =0;
 		virtual int* getpNext() =0;
 		virtual int* getpVehicle() =0;
 		virtual void routeChange(int k = 0) = 0;
 	};
+	*/
 
 	template <class S> class LSProgram {
 	protected:
