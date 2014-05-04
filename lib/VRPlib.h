@@ -79,6 +79,7 @@ public:
 
 	/* VRPTW specific methods */
 	void computeServiceTimes(int k = 0);
+
 	std::string& toString();
 };
 

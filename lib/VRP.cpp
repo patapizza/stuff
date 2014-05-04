@@ -120,7 +120,29 @@ void solutionVRP::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
 	}
 
 	/* To begin with, no customer vertex inserted */
-	for (int i=NVeh+1; i<NVeh+N+1; i++) vehicle[i] = 0; 
+	for (int i=NVeh+1; i<NVeh+N+1; i++) 
+		vehicle[i] = 0; 
+
+	/*
+	for (int unplanned=N; unplanned>0; unplanned--) {
+		int i = rand() % unplanned + 1;
+		// select the i'th unplanned customer
+		int vertex, count=0;
+		for (int j=NVeh+1; j<NVeh+N+1; j++) {
+			if (vehicle[j] == 0) {	// if j is unplanned
+				count ++;
+				if (count == i) {	// if j is the i'th unplanned vertex
+					vertex = j;
+					break;
+				}
+			}
+			else continue;
+		}
+		cout << "unplanned=" << unplanned << "\t i=" << i << "\t vertex=" << vertex << endl;
+		int before_i = bestInsertion(vertex);
+		insertVertex(vertex, before_i, false);
+	}
+	*/
 
 	/* Then assign best insertion to each customer vertex in turn */
 	for (int i=NVeh+1; i<NVeh+N+1; i++) {
