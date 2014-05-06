@@ -112,7 +112,6 @@ solutionVRP::~solutionVRP() {										// destructor ***
 }
 
 void solutionVRP::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
-												// todo: random vertex selection for insertion
 	for(int r=1; r<NVeh+1; r++)	{
 		vehicle[r] = r;
 		previous[r] = r;
@@ -123,7 +122,8 @@ void solutionVRP::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
 	for (int i=NVeh+1; i<NVeh+N+1; i++) 
 		vehicle[i] = 0; 
 
-	/*
+	
+	/* Then assign best insertion to each customer vertex in turn (random version) */
 	for (int unplanned=N; unplanned>0; unplanned--) {
 		int i = rand() % unplanned + 1;
 		// select the i'th unplanned customer
@@ -138,18 +138,20 @@ void solutionVRP::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
 			}
 			else continue;
 		}
-		cout << "unplanned=" << unplanned << "\t i=" << i << "\t vertex=" << vertex << endl;
+		//cout << "unplanned=" << unplanned << "\t i=" << i << "\t vertex=" << vertex << endl;
 		int before_i = bestInsertion(vertex);
 		insertVertex(vertex, before_i, false);
 	}
-	*/
+	
 
-	/* Then assign best insertion to each customer vertex in turn */
+	/* Then assign best insertion to each customer vertex in turn (lexical order version) */
+	/*
 	for (int i=NVeh+1; i<NVeh+N+1; i++) {
 		int before_i = bestInsertion(i);
 
 		insertVertex(i, before_i, false);
 	}
+	*/
 }
 
 /* bestInsertion(int vertex)
