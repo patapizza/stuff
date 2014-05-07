@@ -37,7 +37,8 @@ struct misc {
 	}
 	inline static const string resetColor() {
 		return "\033[0;0m";
-	}};
+	}
+};
 
 
 
@@ -109,6 +110,9 @@ void readInstanceFileCordeauLaporteVRPTWold(const char *filename) {
 	for (int i=1; i<NVeh+N+1; i++)
 		for (int j=1; j<NVeh+N+1; j++)
 			c[i][j] = std::sqrt(std::pow((coordX[i] - coordX[j]),2) + std::pow((coordY[i] - coordY[j]),2)); // compute Euclidean distances
+
+	//for (int i=NVeh+1; i<NVeh+N+1; i++)
+	//	cout << "demand[" << i-NVeh << "]=" << demand[i] << endl;
 }
 
 /*
@@ -125,11 +129,13 @@ inline std::ostream &operator << (std::ostream &out_file, solutionTSP& s) {
 *	defines a solution for a TSP 
 */
 solutionVRPTW::solutionVRPTW() {									// constructor ***
+	h = new float[NVeh+N+1];		// arrival times for every vehicle depot and customer vertices
 	b = new float[NVeh+N+1];		// service times for every vehicle depot and customer vertices
 
 	cout << "Done.\n" << flush; 
 }
 solutionVRPTW::solutionVRPTW(const solutionVRPTW& old_solution) {				// copy constructor ***
+	h = new float[NVeh+N+1];
 	b = new float[NVeh+N+1];
 	*this = old_solution;
 }
@@ -137,10 +143,13 @@ solutionVRPTW& solutionVRPTW::operator = (const solutionVRPTW& sol) {
 	memcpy(previous, sol.previous, (NVeh+N+1)*sizeof(int));
 	memcpy(next, sol.next, (NVeh+N+1)*sizeof(int));
 	memcpy(vehicle, sol.vehicle, (NVeh+N+1)*sizeof(int));
+	memcpy(load, sol.load, (NVeh+1)*sizeof(int));
+	memcpy(h, sol.h, (NVeh+N+1)*sizeof(float));
 	memcpy(b, sol.b, (NVeh+N+1)*sizeof(float));
 	return (*this);
 }
 solutionVRPTW::~solutionVRPTW() {										// destructor ***
+	delete [] h;
 	delete [] b;
 }
 
@@ -166,24 +175,35 @@ int solutionVRPTW::bestInsertion(int vertex) {
 	return before_i;
 }
 
+// recomputes load, arrival and service times at route k (k==0: every routes)
+inline void solutionVRPTW::updateRouteInfos(int k) {	
+	solutionVRP::updateRouteInfos(k);
 
-inline void solutionVRPTW::computeServiceTimes(int k) {	// recomputes service times at route k (k==0: every routes)
 	for (int r=1; r<NVeh+1; r++) {
 		if (k != 0 && k != r) continue;
+
+		// Update arrival and service times upon route k
+		h[r] = 0;
 		b[r] = 0;
 		int i = next[r];
 		while (i != r) {
-			b[i] = max((double) e[i], b[previous[i]] + duration[previous[i]] + c[previous[i]][i]);
+			h[i] = b[previous[i]] + duration[previous[i]] + c[previous[i]][i];
+			b[i] = max((float) e[i], h[i]);
 			i = next[i];
-		} b[r] = max((double) e[r], b[previous[r]] + duration[previous[r]] + c[previous[r]][r]);
+		} 
+		h[r] = b[previous[r]] + duration[previous[r]] + c[previous[r]][r];
+		b[r] = max((float) e[r], h[r]);
 	}
+
 }
 
 
 inline int solutionVRPTW::getViolations(int constraint) {
 	int v = solutionVRP::getViolations(constraint);
 
-	if(constraint == 2 || constraint == 0) for (int i=1; i<NVeh+N+1; i++) if (b[i]+0.000001 > l[i]) v ++;
+	if(constraint == TW_CONSTRAINT || constraint == ALL_CONSTRAINT) 
+		for (int i=1; i<NVeh+N+1; i++) 
+			if (b[i]+0.00001 > l[i]) v ++;
 
 	return (v);
 }	
@@ -194,20 +214,10 @@ string& solutionVRPTW::toString() {
 	ostringstream out; 
 	out.setf(std::ios::fixed);
 	out.precision(2);
-	float *load = new float [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
 	
-	//for (int i=1; i<NVeh+N+1; i++)
-	//	cout << "(i:" << i-NVeh << ",v:" << vehicle[i]-NVeh << "," << previous[i]-NVeh << "," 
-	//			<< next[i]-NVeh << ",q:" << demand[i] << ",x:" << coordX[i] << ",y:" << coordY[i] << ") " << endl;
-	for (int r=1; r<NVeh+1; r++) {	// compute vehicle loads
-		int i = previous[r];
-		load[r] = 0;
-		while (i != r) {
-			load[r] += demand[i]; 
-			i=previous[i];
-		} 
-	}
-	if (getViolations() > 0) out << "\033[0;31mInfeasible ! Violations: " << getViolations() << "\033[0;0m" << endl;
+	
+	//out << "Capacity violations: " << getViolations(1) << endl << "TW violations: " << getViolations(2) << endl << flush;
+	if (getViolations() > 0) out << "\033[0;31mInfeasible ! Violations: " << getViolations() << "\033[0;0m" << endl << flush;
 	out << "Cost = " << getCost() << " \n";
 	for(int r=1; r<NVeh+1; r++) {
 		out << "Route " << setw(2) << r << " (c:" << setw(7) << getCost(r) 
@@ -223,5 +233,13 @@ string& solutionVRPTW::toString() {
 	return (str);
 }
 
+/* test if hard constraints are respected */
+void solutionVRPTW::checkSolutionConsistency() {
+	solutionVRP::checkSolutionConsistency();
+
+	// arrival times must precede service times
+	for (int i=NVeh+1; i<NVeh+N+1; i++)
+		ASSERT(h[i] <= b[i] + 0.00001, "i="<<i-NVeh << " h="<<h[i]<<" b="<<b[i]);
+}
 
 

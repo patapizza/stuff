@@ -12,6 +12,9 @@
 
 using namespace CBLS;
 
+#define	CAPACITY_CONSTRAINT	1
+#define	TW_CONSTRAINT		2
+#define ALL_CONSTRAINT		0
 
 /* Handles instance files of Cordeau-Laporte in data/vrp/old */
 void readInstanceFileCordeauLaporteVRPold(const char *filename);
@@ -27,6 +30,7 @@ protected:
 	int *previous;		// previous[i] = j iff vertex j is visited before i in the same route
 	int *next;			// !!! -> Numbered from 1 to N
 	int *vehicle;		// vehicle[i] = j iff vertex i is serviced by vehicle j
+	int *load;			// load[i] = x iff vehicle i has a cumulative load of x
 public:
 	solutionVRP();												// constructor ***
 	solutionVRP(const solutionVRP& old_solution);				// copy constructor ***
@@ -38,29 +42,31 @@ public:
 	void generateInitialSolution();
 	int bestInsertion(int vertex);
 	void insertVertex(int vertex, int before_i, bool remove);
+	
 	float getCost(int k = 0);
-	int getViolations(int constraint = 0);
-
-	/* interaction methods */
-	int nbConstraints() { return 1; }
+	int getViolations(int constraint = ALL_CONSTRAINT);
 	int* getpPrevious() { return previous; }
 	int* getpNext() { return next; }
 	int* getpVehicle() { return vehicle; }
-	virtual void routeChange(int k = 0) {}
+	int nbConstraints() { return 1; }
+	
+	virtual void updateRouteInfos(int k = 0);
+	void routeChange(int k = 0) { updateRouteInfos(k); }
 
-	/* VRP specific methods */
 	std::string& toString();
+	void checkSolutionConsistency();
 };
 
 
 class solutionVRPTW: public solutionVRP {
-private:
+protected:
 	/* Decision variables */
 	/*
 	int *previous;		// previous[i] = j iff vertex j is visited before i in the same route
 	int *next;			// !!! -> Numbered from 1 to N
 	int *vehicle;		// vehicle[i] = j iff vertex i is serviced by vehicle j
 	*/
+	float *h;			// service times
 	float *b;			// service times
 public:
 	solutionVRPTW();												// constructor ***
@@ -71,16 +77,13 @@ public:
 
 	/* general methods */
 	int bestInsertion(int vertex);
-	int getViolations(int constraint = 0);
+	int getViolations(int constraint = ALL_CONSTRAINT);
 
-	/* interaction methods */
 	int nbConstraints() { return 2; }
-	virtual void routeChange(int k = 0) { computeServiceTimes(k); }
-
-	/* VRPTW specific methods */
-	void computeServiceTimes(int k = 0);
+	void updateRouteInfos(int k = 0);
 
 	std::string& toString();
+	void checkSolutionConsistency();
 };
 
 

@@ -46,4 +46,5 @@ int main(int argc, char *argv[]) {
 	p.run();
 	cout << endl << "Terminated. Best solution found: \n" << s.toString() << endl;
 	p.printWeights();	// remove if not DynamicWeights !!
+	s.checkSolutionConsistency();
 }

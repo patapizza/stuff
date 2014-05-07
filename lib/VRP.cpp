@@ -17,8 +17,8 @@ int N;		// number of vertices [1..N]
 int NVeh;	// number of vehicles [1..NVeh]
 int Q;		// vehicle max capacity
 double **c;
-float *coordX; float *coordY;
-int *demand;
+double *coordX; double *coordY;
+float *demand;
 
 
 /* Handle instance files of Cordeau-Laporte vrp/old */
@@ -38,9 +38,9 @@ void readInstanceFileCordeauLaporteVRPold(const char *filename) {
 	c = new double*[NVeh+N+1];
 	for(int i=0; i<NVeh+N+1; i++) c[i] = new double[NVeh+N+1];
 
-	coordX = new float[NVeh+N+1]; 
-	coordY = new float[NVeh+N+1];
-	demand = new int[NVeh+N+1];
+	coordX = new double[NVeh+N+1]; 
+	coordY = new double[NVeh+N+1];
+	demand = new float[NVeh+N+1];
 	std::getline(instance_file, line); // skip end of line
 
 	instance_file >> i;			// skip int
@@ -91,24 +91,27 @@ solutionVRP::solutionVRP() {											// constructor ***
 	next = new int[NVeh+N+1];
 	vehicle = new int[NVeh+N+1];	// vertices from 1 to Nveh + Nveh 	// vehicle[i] = i iff i is a depot
 									//										vehicle[i] = 0 iff i is not inserted
-
+	load = new int [NVeh+1];		// load[i] = x iff vehicle i has a cumulative load of x
 	}
 solutionVRP::solutionVRP(const solutionVRP& old_solution) {				// copy constructor ***
 	previous = new int[NVeh+N+1];
 	next = new int[NVeh+N+1];
 	vehicle = new int[NVeh+N+1];
+	load = new int [NVeh+1];		
 	*this = old_solution;
 }
 solutionVRP& solutionVRP::operator = (const solutionVRP& sol) {
 	memcpy(previous, sol.previous, (NVeh+N+1)*sizeof(int));
 	memcpy(next, sol.next, (NVeh+N+1)*sizeof(int));
 	memcpy(vehicle, sol.vehicle, (NVeh+N+1)*sizeof(int));
+	memcpy(load, sol.load, (NVeh+1)*sizeof(int));
 	return (*this);
 }
 solutionVRP::~solutionVRP() {										// destructor ***
 	delete [] previous;
 	delete [] next;
 	delete [] vehicle;
+	delete [] load;
 }
 
 void solutionVRP::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
@@ -194,9 +197,9 @@ void solutionVRP::insertVertex(int vertex, int before_i, bool remove) {
 	next[previous[vertex]] = vertex;
 
 	// notify solution that some routes changed
-	if (remove) this->routeChange(from_route); 
+	if (remove) routeChange(from_route); 
 	if (from_route != vehicle[before_i]) 
-		this->routeChange(vehicle[before_i]);
+		routeChange(vehicle[before_i]);
 }
 
 inline float solutionVRP::getCost(int k) {	// returns cost of route k (all route cost of k==0)
@@ -212,20 +215,26 @@ inline float solutionVRP::getCost(int k) {	// returns cost of route k (all route
 	return (cost);
 }
 
-int solutionVRP::getViolations(int constraint) {
-	int v = 0;
-	int *load = new int [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
-	
-	for (int r=1; r<NVeh+1; r++) {	// compute vehicle loads
-		int i = previous[r];
+void solutionVRP::updateRouteInfos(int k) {
+	for (int r=1; r<NVeh+1; r++) {	
+		if (k != 0 && k != r) continue;
+
+		// update vehicle loads
 		load[r] = 0;
+		int i = previous[r];
 		while (i != r) {
 			load[r] += demand[i];
 			i=previous[i];
 		} 
 	}
+}
 
-	if(constraint == 1 || constraint == 0) for(int r=1; r<NVeh+1; r++) if (load[r] > Q) v += load[r] - Q;
+int solutionVRP::getViolations(int constraint) {
+	int v = 0;
+
+	if(constraint == CAPACITY_CONSTRAINT || constraint == ALL_CONSTRAINT) 
+		for(int r=1; r<NVeh+1; r++)
+			if (load[r] > Q) v += load[r] - Q;
 
 	return (v);
 }		
@@ -233,19 +242,8 @@ int solutionVRP::getViolations(int constraint) {
 
 string& solutionVRP::toString() {
 	ostringstream out;
-	float *load = new float [NVeh+1];	// load[i] = x iff vehicle i has a cumulative load of x
 	
-	//for (int i=1; i<NVeh+N+1; i++)
-	//	cout << "(i:" << i-NVeh << ",v:" << vehicle[i]-NVeh << "," << previous[i]-NVeh << "," 
-	//			<< next[i]-NVeh << ",q:" << demand[i] << ",x:" << coordX[i] << ",y:" << coordY[i] << ") " << endl;
-	for (int r=1; r<NVeh+1; r++) {	// compute vehicle loads
-		int i = previous[r];
-		load[r] = 0;
-		while (i != r) {
-			load[r] += demand[i]; 
-			i=previous[i];
-		} 
-	}
+	out << "Capacity violations: " << getViolations(1) << endl;
 	if (getViolations() > 0) out << "Infeasible ! ";
 	out << "Cost=" << getCost() << " \n";
 	for(int r=1; r<NVeh+1; r++) {
@@ -257,3 +255,25 @@ string& solutionVRP::toString() {
 	static string str = ""; str = out.str();
 	return (str);
 }
+
+
+/* test if hard constraints are respected */
+void solutionVRP::checkSolutionConsistency() {
+
+	// each customer must be assigned to one vehicle
+	for (int i=NVeh+1; i<NVeh+N+1; i++) {
+		ASSERT(vehicle[i] >= 1 && vehicle[i] <= NVeh, "i="<<i-NVeh); 
+	}
+
+	// each customer must be serviced exactly once
+	int *serviceCount = new int[NVeh+N+1];
+	for (int i=1; i<NVeh+N+1; i++) serviceCount[i] = 0;
+	for(int r=1; r<NVeh+1; r++) 
+		for(int i=next[r], n=1; i!=r; i=next[i], n++) 
+			serviceCount[i]++; 
+	for(int i=NVeh+1; i<NVeh+N+1; i++) 
+		ASSERT(serviceCount[i] == 1, "serviceCount["<< i-NVeh <<"]=" << serviceCount[i]);	
+	delete [] serviceCount;
+}
+
+

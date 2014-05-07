@@ -35,10 +35,11 @@ int main(int argc, char *argv[]) {
 	cout << "Reading instance file..." << flush;
 	readInstanceFileCordeauLaporteVRPTWold(instance_file); cout << "Done." << endl << flush;
 	solutionVRPTW s;
-	cout << "Generating initial VRP solution ..." << flush;
+	cout << "Generating initial VRPTW solution ..." << flush;
 	s.generateInitialSolution();
 	cout << "Done.\n" << flush; 
 	cout << "Initial solution: " << endl << s.toString() << endl << flush;
+	s.checkSolutionConsistency();
 
 	//LSProgramBasic<solutionVRPTW> p(&s, nb_iter, 1); // 1% diversification
 	LSProgramBasicDynamicWeights<solutionVRPTW> p(&s, nb_iter, 1, 0.001); // 1% diversification, delta=0.001
@@ -46,4 +47,5 @@ int main(int argc, char *argv[]) {
 	p.run(); 
 	cout << endl << "Terminated. Best solution found: \n" << s.toString() << endl;
 	p.printWeights();
+	s.checkSolutionConsistency();
 }
