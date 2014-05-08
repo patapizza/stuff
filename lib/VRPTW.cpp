@@ -27,12 +27,16 @@ float *duration;	// service duration at each vertex
 int   *e;			// start of time window at each vertex
 int   *l;			// end of time window at each vertex
 
-
+extern int Nactive;
 
 /* miscellaous functions */
 struct misc {
 	inline static const string redExpr(bool expr) {
 		if (expr) return "\033[0;31m";
+		else return ""; 
+	}
+	inline static const string greenExpr(bool expr) {
+		if (expr) return "\033[0;32m";
 		else return ""; 
 	}
 	inline static const string resetColor() {
@@ -125,54 +129,44 @@ inline std::ostream &operator << (std::ostream &out_file, solutionTSP& s) {
 }*/
 
 
-/* class solutionVRPTW ********************************************************************************************
-*	defines a solution for a TSP 
-*/
+/* class solutionVRPTW  ********************************************************************************************/
+
 solutionVRPTW::solutionVRPTW() {									// constructor ***
+	fixed = new bool[NVeh+N+1];	// tells whether a customer vertex is fixed in the sol (i.e. cannot be moved)
+	for (int i=1; i<NVeh+N+1; i++) fixed[i] = false;
+
 	h = new float[NVeh+N+1];		// arrival times for every vehicle depot and customer vertices
 	b = new float[NVeh+N+1];		// service times for every vehicle depot and customer vertices
-
-	cout << "Done.\n" << flush; 
 }
-solutionVRPTW::solutionVRPTW(const solutionVRPTW& old_solution) {				// copy constructor ***
-	h = new float[NVeh+N+1];
-	b = new float[NVeh+N+1];
+solutionVRPTW::solutionVRPTW(const solutionVRPTW& old_solution) : solutionVRPTW() {		// copy constructor ***
 	*this = old_solution;
 }
 solutionVRPTW& solutionVRPTW::operator = (const solutionVRPTW& sol) {
-	memcpy(previous, sol.previous, (NVeh+N+1)*sizeof(int));
-	memcpy(next, sol.next, (NVeh+N+1)*sizeof(int));
-	memcpy(vehicle, sol.vehicle, (NVeh+N+1)*sizeof(int));
-	memcpy(load, sol.load, (NVeh+1)*sizeof(int));
+	solutionVRP::operator = (sol);
+	memcpy(fixed, sol.fixed, (NVeh+N+1)*sizeof(bool));
 	memcpy(h, sol.h, (NVeh+N+1)*sizeof(float));
 	memcpy(b, sol.b, (NVeh+N+1)*sizeof(float));
 	return (*this);
 }
 solutionVRPTW::~solutionVRPTW() {										// destructor ***
+	delete [] fixed;
 	delete [] h;
 	delete [] b;
 }
 
 
-/* bestInsertion(int vertex)
-	Find the best position to REinstert a single vertex "vertex"
-*/
-int solutionVRPTW::bestInsertion(int vertex) {
-	int before_i;
-	float min_delta = numeric_limits<float>::max();
-	for (int i=1; i<NVeh+N+1; i++) {
-		float delta = 0.0;
-		if (i == vertex || i == next[vertex]) continue;	// skip if same position
-		if (vehicle[i] == 0) continue; // skip if vertex i not inserted yet
-		delta =   c[previous[i]][i] 
-				+ c[previous[i]][vertex]
-				+ c[vertex][i];
-		if (delta < min_delta) {
-			before_i = i;
-			min_delta = delta;
-		} 
-	} 
-	return before_i;
+
+/* Tells whether it is possible to insert a vertex before another vertex, w.r.t the constraints */
+inline bool solutionVRPTW::feasibleInsertion(int vertex, int before_i) {
+	float arrival_time = b[previous[before_i]] + duration[previous[before_i]] + c[previous[before_i]][vertex];
+	float service_time = max((float) e[vertex], arrival_time);
+	float arrival_time_before_i = service_time + duration[vertex] + c[vertex][before_i];
+	float service_time_before_i = max((float) e[before_i], arrival_time_before_i);
+
+	return 
+		solutionVRP::feasibleInsertion(vertex, before_i) && 
+		service_time <= l[vertex]+0.00001 &&
+		service_time_before_i <= l[before_i]+0.00001;
 }
 
 // recomputes load, arrival and service times at route k (k==0: every routes)
@@ -203,7 +197,7 @@ inline int solutionVRPTW::getViolations(int constraint) {
 
 	if(constraint == TW_CONSTRAINT || constraint == ALL_CONSTRAINT) 
 		for (int i=1; i<NVeh+N+1; i++) 
-			if (b[i]+0.00001 > l[i]) v ++;
+			if (active[i] && b[i]+0.00001 > l[i]) v ++;
 
 	return (v);
 }	
@@ -221,13 +215,14 @@ string& solutionVRPTW::toString() {
 	out << "Cost = " << getCost() << " \n";
 	for(int r=1; r<NVeh+1; r++) {
 		out << "Route " << setw(2) << r << " (c:" << setw(7) << getCost(r) 
-			<< " q:" << misc::redExpr(load[r]>Q) << setw(7) << load[r] << misc::resetColor() << "): D \t";
+			<< " q:" << misc::redExpr(routeLoad[r]>Q) << setw(7) << routeLoad[r] << misc::resetColor() << "): D \t";
 		for(int i=next[r], n=1; i!=r; i=next[i], n++) {
-			out << setw(3) << i-NVeh << "[" << misc::redExpr(b[i]>l[i]) << setw(7) << setfill('0') 
-				<< b[i] << misc::resetColor() << "]" << " " << setfill(' ');
+			out << setw(3) << misc::greenExpr(fixed[i]) << i-NVeh << misc::resetColor() << "[" << misc::redExpr(b[i]>l[i]) 
+				<< setw(7) << setfill('0') << b[i] << misc::resetColor() << "]" << " " << setfill(' ');
 			if ((n%7) == 0) out << endl << "\t\t\t\t\t";
 		}
-		out << "  D" << "[" << misc::redExpr(b[r]>l[r]) << setw(7) << setfill('0') << b[r] << misc::resetColor() << "]" << endl << setfill(' ');
+		out << misc::greenExpr(fixed[r]) << "  D" << misc::resetColor() << "[" << misc::redExpr(b[r]>l[r]) << setw(7) 
+			<< setfill('0') << b[r] << misc::resetColor() << "]" << endl << setfill(' ');
 	}
 	static string str = ""; str = out.str();
 	return (str);
@@ -239,7 +234,20 @@ void solutionVRPTW::checkSolutionConsistency() {
 
 	// arrival times must precede service times
 	for (int i=NVeh+1; i<NVeh+N+1; i++)
-		ASSERT(h[i] <= b[i] + 0.00001, "i="<<i-NVeh << " h="<<h[i]<<" b="<<b[i]);
+		ASSERT(!active[i] || h[i] <= b[i], "i="<<i-NVeh << " h="<<h[i]<<" b="<<b[i]); // active --> good TW
+}
+
+
+/* dynamic context: 
+ * any customer i already serviced of about to be serviced at time t becomes fixed
+ */
+void solutionVRPTW::fixSolution(float t) {	
+	// depots vertices: because of time windows, depot can also be fixed (end of workday)
+	for (int k=1; k<NVeh+1; k++) 
+		if (t + duration[previous[k]] + c[previous[k]][k] >= l[k]) fixed[k] = true;
+	// customer vertices
+	for (int i=NVeh+1; i<NVeh+N+1; i++) 
+		if (t + duration[previous[i]] + c[previous[i]][i] >= b[i]) fixed[i] = true;
 }
 
 

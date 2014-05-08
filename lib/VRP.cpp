@@ -20,6 +20,7 @@ double **c;
 double *coordX; double *coordY;
 float *demand;
 
+int Nactive;
 
 /* Handle instance files of Cordeau-Laporte vrp/old */
 void readInstanceFileCordeauLaporteVRPold(const char *filename) {
@@ -41,6 +42,7 @@ void readInstanceFileCordeauLaporteVRPold(const char *filename) {
 	coordX = new double[NVeh+N+1]; 
 	coordY = new double[NVeh+N+1];
 	demand = new float[NVeh+N+1];
+
 	std::getline(instance_file, line); // skip end of line
 
 	instance_file >> i;			// skip int
@@ -86,32 +88,37 @@ inline std::ostream &operator << (std::ostream &out_file, solutionTSP& s) {
 /* class solutionVRP ********************************************************************************************
 *	defines a solution for a TSP 
 */
+
+
 solutionVRP::solutionVRP() {											// constructor ***
+	active = new bool[NVeh+N+1];	// tells whether a customer vertex is active in the sol (i.e. must be serviced)
 	previous = new int[NVeh+N+1];	// vertices from 1 to NVeh + N
 	next = new int[NVeh+N+1];
 	vehicle = new int[NVeh+N+1];	// vertices from 1 to Nveh + Nveh 	// vehicle[i] = i iff i is a depot
 									//										vehicle[i] = 0 iff i is not inserted
-	load = new int [NVeh+1];		// load[i] = x iff vehicle i has a cumulative load of x
+	routeLoad = new int [NVeh+1];		// routeLoad[k] = x iff vehicle k has a cumulative routeLoad of x
+	routeCost = new double [NVeh+1];		// routeCost[r] = x iff route r has a cost x
 	}
-solutionVRP::solutionVRP(const solutionVRP& old_solution) {				// copy constructor ***
-	previous = new int[NVeh+N+1];
-	next = new int[NVeh+N+1];
-	vehicle = new int[NVeh+N+1];
-	load = new int [NVeh+1];		
+solutionVRP::solutionVRP(const solutionVRP& old_solution) : solutionVRP() {		// copy constructor ***		
 	*this = old_solution;
 }
+
 solutionVRP& solutionVRP::operator = (const solutionVRP& sol) {
+	memcpy(active, sol.active, (NVeh+N+1)*sizeof(bool));
 	memcpy(previous, sol.previous, (NVeh+N+1)*sizeof(int));
 	memcpy(next, sol.next, (NVeh+N+1)*sizeof(int));
 	memcpy(vehicle, sol.vehicle, (NVeh+N+1)*sizeof(int));
-	memcpy(load, sol.load, (NVeh+1)*sizeof(int));
+	memcpy(routeLoad, sol.routeLoad, (NVeh+1)*sizeof(int));
+	memcpy(routeCost, sol.routeCost, (NVeh+1)*sizeof(double));
 	return (*this);
 }
 solutionVRP::~solutionVRP() {										// destructor ***
+	delete [] active;
 	delete [] previous;
 	delete [] next;
 	delete [] vehicle;
-	delete [] load;
+	delete [] routeLoad;
+	delete [] routeCost;
 }
 
 void solutionVRP::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
@@ -127,12 +134,12 @@ void solutionVRP::generateInitialSolution() {	// BEST INSERTION INITIAL SOL
 
 	
 	/* Then assign best insertion to each customer vertex in turn (random version) */
-	for (int unplanned=N; unplanned>0; unplanned--) {
+	for (int unplanned=Nactive; unplanned>0; unplanned--) {
 		int i = rand() % unplanned + 1;
 		// select the i'th unplanned customer
 		int vertex, count=0;
 		for (int j=NVeh+1; j<NVeh+N+1; j++) {
-			if (vehicle[j] == 0) {	// if j is unplanned
+			if (vehicle[j] == 0 && active[j]) {	// if j is unplanned
 				count ++;
 				if (count == i) {	// if j is the i'th unplanned vertex
 					vertex = j;
@@ -166,16 +173,22 @@ int solutionVRP::bestInsertion(int vertex) {
 	for (int i=1; i<NVeh+N+1; i++) {
 		float delta = 0.0;
 		if (i == vertex || i == next[vertex]) continue; // skip if same position
-		if (vehicle[i] == 0) continue; // skip if vertex i not inserted yet
+		if (vehicle[i] == 0) continue; // skip if vertex i not inserted yet (or not active)
 		delta =   c[previous[i]][i] 
 				+ c[previous[i]][vertex]
-				+ c[vertex][i];
+				+ c[vertex][i]
+				+ feasibleInsertion(vertex, i) * 0.1*routeCost[vehicle[i]];
 		if (delta < min_delta) {
 			before_i = i;
 			min_delta = delta;
 		} 
 	} 
 	return before_i;
+}
+
+/* Tells whether it is possible to insert a vertex before another vertex, w.r.t the constraints */
+bool solutionVRP::feasibleInsertion(int vertex, int before_i) {
+	return routeLoad[vehicle[before_i]]+demand[vertex] > Q;
 }
 
 
@@ -202,15 +215,11 @@ void solutionVRP::insertVertex(int vertex, int before_i, bool remove) {
 		routeChange(vehicle[before_i]);
 }
 
-inline float solutionVRP::getCost(int k) {	// returns cost of route k (all route cost of k==0)
-	float cost = 0.0;
+inline double solutionVRP::getCost(int k) {	// returns cost of route k (all route cost of k==0)
+	double cost = 0.0;
 	for (int r=1; r<NVeh+1; r++) {
 		if (k != 0 && k != r) continue;
-		int i = previous[r];
-		while (i != r) {
-			cost += c[i][next[i]];
-			i=previous[i];
-		} cost += c[i][next[i]];
+		cost += routeCost[r];
 	}
 	return (cost);
 }
@@ -219,13 +228,17 @@ void solutionVRP::updateRouteInfos(int k) {
 	for (int r=1; r<NVeh+1; r++) {	
 		if (k != 0 && k != r) continue;
 
-		// update vehicle loads
-		load[r] = 0;
+		// update vehicle load and route cost
+		routeLoad[r] = 0;
+		routeCost[r] = 0;
 		int i = previous[r];
 		while (i != r) {
-			load[r] += demand[i];
+			routeLoad[r] += demand[i];
+			routeCost[r] += c[i][next[i]];
 			i=previous[i];
 		} 
+		routeCost[r] += c[i][next[i]];
+		
 	}
 }
 
@@ -234,7 +247,7 @@ int solutionVRP::getViolations(int constraint) {
 
 	if(constraint == CAPACITY_CONSTRAINT || constraint == ALL_CONSTRAINT) 
 		for(int r=1; r<NVeh+1; r++)
-			if (load[r] > Q) v += load[r] - Q;
+			if (routeLoad[r] > Q) v += routeLoad[r] - Q;
 
 	return (v);
 }		
@@ -243,11 +256,11 @@ int solutionVRP::getViolations(int constraint) {
 string& solutionVRP::toString() {
 	ostringstream out;
 	
-	out << "Capacity violations: " << getViolations(1) << endl;
+	//out << "Capacity violations: " << getViolations(1) << endl;
 	if (getViolations() > 0) out << "Infeasible ! ";
 	out << "Cost=" << getCost() << " \n";
 	for(int r=1; r<NVeh+1; r++) {
-		out << "Route " << r << "(" << load[r] << "): D ";
+		out << "Route " << r << "(" << routeLoad[r] << "): D ";
 		for(int i=next[r]; i!=r; i=next[i])
 			out << i-NVeh << " ";
 		out << "D\n";
@@ -260,20 +273,44 @@ string& solutionVRP::toString() {
 /* test if hard constraints are respected */
 void solutionVRP::checkSolutionConsistency() {
 
-	// each customer must be assigned to one vehicle
+	// a customer is active IFF he's assigned to one vehicle
 	for (int i=NVeh+1; i<NVeh+N+1; i++) {
-		ASSERT(vehicle[i] >= 1 && vehicle[i] <= NVeh, "i="<<i-NVeh); 
+		ASSERT(!active[i] || (vehicle[i] >= 1 && vehicle[i] <= NVeh), "i="<<i-NVeh); // active --> assigned
+		ASSERT(active[i] || !(vehicle[i] >= 1 && vehicle[i] <= NVeh), "i="<<i-NVeh); // active --> assigned	
 	}
 
-	// each customer must be serviced exactly once
+	// each customer must be serviced exactly once IFF it is active
 	int *serviceCount = new int[NVeh+N+1];
 	for (int i=1; i<NVeh+N+1; i++) serviceCount[i] = 0;
 	for(int r=1; r<NVeh+1; r++) 
 		for(int i=next[r], n=1; i!=r; i=next[i], n++) 
 			serviceCount[i]++; 
-	for(int i=NVeh+1; i<NVeh+N+1; i++) 
-		ASSERT(serviceCount[i] == 1, "serviceCount["<< i-NVeh <<"]=" << serviceCount[i]);	
+	for(int i=NVeh+1; i<NVeh+N+1; i++) {
+		ASSERT(serviceCount[i] <= 1, "serviceCount["<< i-NVeh <<"]=" << serviceCount[i]);
+		ASSERT(!active[i] || serviceCount[i] == 1, "serviceCount["<< i-NVeh <<"]=" << serviceCount[i]); // active --> serviced
+		ASSERT(active[i] || serviceCount[i] == 0, "serviceCount["<< i-NVeh <<"]=" << serviceCount[i]); // serviced --> active
+	}	
 	delete [] serviceCount;
 }
+
+/* dynamic context: 
+ * determine which customers will be part of the planning
+ */
+void solutionVRP::sampleInstance(float active_ratio) {
+	for (int i=1; i<NVeh+N+1; i++) 
+		active[i] = true;
+	
+	// disable some customers
+	for (int i=NVeh+1+N*active_ratio; i<NVeh+N+1; i++)
+		active[i] = false;
+	
+
+	// count the active customers
+	Nactive=0;
+	for (int i=NVeh+1; i<NVeh+N+1; i++) 
+		if(active[i]) Nactive++;
+	cout << "Number of active customers: " << Nactive << "/" << N << endl;
+}
+
 
 

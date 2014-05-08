@@ -35,13 +35,14 @@ int main(int argc, char *argv[]) {
 	srand(t);
 	readInstanceFileCordeauLaporteVRPold(instance_file); 
 	solutionVRP s;
+	s.sampleInstance(1.0);
 	cout << "Generating initial VRP solution ..." << flush;
-	s.generateInitialSolution();
+	s.generateInitialSolution(); 
 	cout << "Done.\n" << flush; 
 	cout << "Initial solution: " << endl << s.toString() << endl << flush;
 
 	//LSProgramBasic<solutionVRP> p(&s, nb_iter, 3);
-	LSProgramBasicDynamicWeights<solutionVRP> p(&s, nb_iter, 1, 0.01);
+	LSProgramBasicDynamicWeights<solutionVRP> p(&s, nb_iter, 1, 0.0011);
 	cout << "Running LS program" << endl;
 	p.run();
 	cout << endl << "Terminated. Best solution found: \n" << s.toString() << endl;
