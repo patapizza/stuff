@@ -2,8 +2,6 @@
 #include <vector> // std::vector
 #include <utility> // std::pair, std::make_pair
 
-using namespace std;
-
 namespace CBLS {
 /*
 	template <class T> class var {
@@ -77,15 +75,22 @@ namespace CBLS {
 
 	};
 
-    template <class S> class LSTabu : LSProgram {
+    template <typename T>
+    using TPair = std::pair<T, int>;
+
+    /*template <typename T>
+    using TVector = std::vector<TPair<T>>;*/
+
+    template <class S> class LSTabu : LSProgram<S> {
     private:
-        vector<pair<int, S>> t;
+        std::vector<std::pair<int, S>> t;
+        //TVector<TPair<S>> t;
         int tenure;
     public:
-        LSTabu(S *initialSolution) : LSProgram(S *initialSolution) {
+        LSTabu(S *initialSolution) : LSProgram<S>(initialSolution) {
             LSTabu(initialSolution, 1000000, 2);
         }
-        LSTabu(S *initialSolution, iter, tenure) {
+        LSTabu(S *initialSolution, int iter, int tenure) {
             this->iter = iter;
             this->tenure = tenure;
         }
@@ -99,7 +104,7 @@ namespace CBLS {
         }
 
         bool acceptanceCriterion(S &candidateSolution) {
-            for (vector<pair<int, S>>::iterator it = t.begin(); it != t.end(); ++it)
+            for (std::vector<std::pair<int, S>>::iterator it = t.begin(); it != t.end(); ++it)
                 if (it->second == candidateSolution)
                     return false;
             return true;
@@ -107,17 +112,17 @@ namespace CBLS {
 
         void expire_features() {
             int i = -1;
-            for (vector<pair<int, S>>::iterator it = t.begin(); it != t.end() && it->first - iter == tenure; ++it)
-                ++i;
+            for (std::vector<std::pair<int, S>>::iterator it = t.begin(); it != t.end() && it->first - iter == tenure; ++it, ++i)
+                ;
             t.erase(t.begin(), t.begin() + i);
         }
 
         void run() {
             S candidateSolution(*bestSolution);
             while (false == terminationCondition()) {
-                vector<S> neighbors = candidateSolution.fullNeighborhood();
-                vector<S> legal;
-                for (vector<S>::iterator it = neighbors.begin(); it != neighbors.end(); ++it)
+                std::vector<S> neighbors = candidateSolution.fullNeighborhood();
+                std::vector<S> legal;
+                for (std::vector<S>::iterator it = neighbors.begin(); it != neighbors.end(); ++it)
                     if (acceptanceCriterion(*it))
                         legal.push_back(*it);
                 candidateSolution = candidateSelection(legal);

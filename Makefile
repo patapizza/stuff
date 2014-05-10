@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-g -O0
+CFLAGS=-std=c++11 -g -O0
 SRC=testTSP.cpp
 OBJ=testTSP.o
 
