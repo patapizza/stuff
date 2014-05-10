@@ -1,0 +1,11 @@
+File Name: Instance-(Type)-(Number of Vertex)-(Different duration type of route)
+
+Type: R, C1, C2 or RC; Number of Vertex: 25, 50, 75 or 100; Different Duration of route: L1 (\varphi = 1), L2 (\varphi = 2), L3 (\varphi = 3).
+
+Date Format:
+(Capacity of vehicle) (Duration of routes)
+
+(x coordinate of vertex) (y coordinate of vertex) (mean service time on vertex) (standard deviation of service time)
+.
+.
+.

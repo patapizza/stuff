@@ -1,0 +1,6 @@
+n number of facilities, m number of sites, v unit traffic cost
+for (i = 1; i <= n; i++) { for (j = 1; j <= n; j++) {t_ij, traffic intensity between facilities i and j}} // note: in this istance set the matrix is simmetric
+for (h = 1; h <= m; h++) { for (k = 1; k <= m; k++) {d_hk, distance between sites h and k}} // note: in this istance set the matrix is simmetric
+for (i = 1; i <= n; i++) { for (k = 1; k <= m; k++) {a_ik installation cost facility i to site k}}
+for (i = 1; i <= n; i++) {q_i, weight of facility i}
+for (k = 1; k <= m; k++) {Q_k, capacity of site k}
