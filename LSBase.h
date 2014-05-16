@@ -53,7 +53,7 @@ namespace CBLS {
 		virtual bool terminationCondition() =0; 		// decides whether the LS procedure should stop or not
 		virtual bool acceptanceCriterion(S& candidateSolution, S& incumbentSolution) =0;	
 														// tells whether current solution must be accepted, according to the incumbent solution
-		void run(){
+		void run() {
 			iter = 0;
 			S incumbentSolution(*bestSolution);			// invokes the copy constructor
 			S neighborSolution(*bestSolution);			// invokes the copy constructor
@@ -75,16 +75,9 @@ namespace CBLS {
 
 	};
 
-    template <typename T>
-    using TPair = std::pair<T, int>;
-
-    /*template <typename T>
-    using TVector = std::vector<TPair<T>>;*/
-
     template <class S> class LSTabu : LSProgram<S> {
     private:
-        std::vector<std::pair<int, S>> t;
-        //TVector<TPair<S>> t;
+        std::vector<std::pair<int, S> > t;
         int tenure;
     public:
         LSTabu(S *initialSolution) : LSProgram<S>(initialSolution) {
@@ -104,7 +97,7 @@ namespace CBLS {
         }
 
         bool acceptanceCriterion(S &candidateSolution) {
-            for (std::vector<std::pair<int, S>>::iterator it = t.begin(); it != t.end(); ++it)
+            for (typename std::vector<std::pair<int, S> >::iterator it = t.begin(); it != t.end(); ++it)
                 if (it->second == candidateSolution)
                     return false;
             return true;
@@ -112,22 +105,26 @@ namespace CBLS {
 
         void expire_features() {
             int i = -1;
-            for (std::vector<std::pair<int, S>>::iterator it = t.begin(); it != t.end() && it->first - iter == tenure; ++it, ++i)
+            for (typename std::vector<std::pair<int, S> >::iterator it = t.begin(); it != t.end() && it->first - this->iter == tenure; ++it, ++i)
                 ;
             t.erase(t.begin(), t.begin() + i);
         }
 
+        S candidateSelection(std::vector<S> &legal) {
+            return legal[0];
+        }
+
         void run() {
-            S candidateSolution(*bestSolution);
+            S candidateSolution(*(this->bestSolution));
             while (false == terminationCondition()) {
                 std::vector<S> neighbors = candidateSolution.fullNeighborhood();
                 std::vector<S> legal;
-                for (std::vector<S>::iterator it = neighbors.begin(); it != neighbors.end(); ++it)
+                for (typename std::vector<S>::iterator it = neighbors.begin(); it != neighbors.end(); ++it)
                     if (acceptanceCriterion(*it))
                         legal.push_back(*it);
                 candidateSolution = candidateSelection(legal);
-                if (candidateSolution.getEval() < bestSolution->getEval())
-                    *bestSolution = candidateSolution;
+                if (candidateSolution.getEval() < this->bestSolution->getEval())
+                    *(this->bestSolution) = candidateSolution;
                 t.push_back(make_pair(this->iter, candidateSolution));
                 expire_features();
                 --(this->iter);

@@ -119,6 +119,11 @@ public:
             violations += this->violations[i];
         return violations;
 	}
+
+    vector<SolutionNQueens> fullNeighborhood() {
+        vector<SolutionNQueens> solutions;
+        return solutions;
+    }
 };
 
 inline std::ostream &operator << (std::ostream &out, SolutionNQueens &s) {
@@ -131,9 +136,11 @@ inline std::ostream &operator << (std::ostream &out, SolutionNQueens &s) {
     return out;
 }
 
-template <class S> class LSProgramNQueens : public LSProgram<S> {
+//template <class S> class LSProgramNQueens : public LSProgram<S> {
+template <class S> class LSProgramNQueens : public LSTabu<S> {
 public:
-	LSProgramNQueens(S *initialSolution) : LSProgram<S>(initialSolution) {
+	//LSProgramNQueens(S *initialSolution) : LSProgram<S>(initialSolution) {
+    LSProgramNQueens(S *initialSolution) : LSTabu<S>(initialSolution) {
     }
 
 	bool acceptanceCriterion(S &candidateSolution, S &incumbentSolution) {
