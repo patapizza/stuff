@@ -47,8 +47,8 @@ namespace CBLS {
 		S *bestSolution;
 		int iter;
 	public:
-		LSProgram(S *initialSolution) {
-			this->bestSolution = initialSolution;
+		LSProgram(S *initialSolution) : bestSolution(initialSolution) {
+			//this->bestSolution = initialSolution;
 		}
 		virtual bool terminationCondition() =0; 		// decides whether the LS procedure should stop or not
 		virtual bool acceptanceCriterion(S& candidateSolution, S& incumbentSolution) =0;	
@@ -75,7 +75,7 @@ namespace CBLS {
 
 	};
 
-    template <class S> class LSTabu : LSProgram<S> {
+    template <class S> class LSTabu : public LSProgram<S> {
     private:
         std::vector<std::pair<int, S> > t;
         int tenure;
@@ -83,9 +83,9 @@ namespace CBLS {
         LSTabu(S *initialSolution) : LSProgram<S>(initialSolution) {
             LSTabu(initialSolution, 1000000, 2);
         }
-        LSTabu(S *initialSolution, int iter, int tenure) {
+        LSTabu(S *initialSolution, int iter, int tenure) : LSProgram<S>(initialSolution), tenure(tenure) {
             this->iter = iter;
-            this->tenure = tenure;
+            //this->tenure = tenure;
         }
 
         bool terminationCondition() {
@@ -117,7 +117,7 @@ namespace CBLS {
         void run() {
             S candidateSolution(*(this->bestSolution));
             while (false == terminationCondition()) {
-                std::vector<S> neighbors = candidateSolution.fullNeighborhood();
+                std::vector<S> neighbors = candidateSolution.fullNeighborhood(); // to check
                 std::vector<S> legal;
                 for (typename std::vector<S>::iterator it = neighbors.begin(); it != neighbors.end(); ++it)
                     if (acceptanceCriterion(*it))

@@ -24,8 +24,8 @@ class SolutionNQueens: public Solution {
     int *queens;
     int *violations;
 public:
-	SolutionNQueens(int n) {
-        this->n = n;
+	SolutionNQueens(int n) : n(n) {
+        //this->n = n;
         this->board = new int*[n];
         this->queens = new int[n];
         this->violations = new int[n];
@@ -55,6 +55,13 @@ public:
         for (int i = 0; i < n; i++)
             memcpy(board[i], sol.board[i], n * sizeof(int));
         return *this;
+    }
+
+    bool operator == (const SolutionNQueens &sol) {
+        for (int i = 0; i < n; i++)
+            if (board[i] != sol.board[i])
+                return false;
+        return true;
     }
 
     ~SolutionNQueens() {
