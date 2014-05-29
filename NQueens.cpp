@@ -127,8 +127,10 @@ public:
         return violations;
 	}
 
-    vector<SolutionNQueens> fullNeighborhood() {
-        vector<SolutionNQueens> solutions;
+    vector<SolutionNQueens*> fullNeighborhood() {
+        vector<SolutionNQueens*> solutions;
+        solutions.push_back(new SolutionNQueens(n));
+        solutions.push_back(new SolutionNQueens(n));
         return solutions;
     }
 };
@@ -151,11 +153,13 @@ public:
     }
 
 	bool acceptanceCriterion(S &candidateSolution, S &incumbentSolution) {
-        return candidateSolution.getEval() < incumbentSolution.getEval();
+        //return this->candidateSolution.getViolations() < incumbentSolution->getViolations();
+        return LSTabu<S>::acceptanceCriterion(candidateSolution, incumbentSolution);
 	}
 
 	bool terminationCondition() {
-        return this->bestSolution->getViolations() == 0 || this->iter == 1000000;
+        //return this->bestSolution->getViolations() == 0 || this->iter == 1000000;
+        return this->bestSolution->getViolations() == 0 || LSTabu<S>::terminationCondition();
 	}
 };
 

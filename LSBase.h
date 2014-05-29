@@ -107,27 +107,37 @@ namespace CBLS {
             int i = -1;
             for (typename std::vector<std::pair<int, S> >::iterator it = t.begin(); it != t.end() && it->first - this->iter == tenure; ++it, ++i)
                 ;
-            t.erase(t.begin(), t.begin() + i);
+            std::cout << "(iter: " << this->iter << ") expire features: " << i << "\n";
+            if (i > -1)
+                t.erase(t.begin(), t.begin() + i);
         }
 
-        S candidateSelection(std::vector<S> &legal) {
-            return legal[0];
+        S candidateSelection(std::vector<S*> &legal) {
+            return *legal[0];
         }
 
         void run() {
             S candidateSolution(*(this->bestSolution));
-            while (false == terminationCondition()) {
-                std::vector<S> neighbors = candidateSolution.fullNeighborhood(); // to check
-                std::vector<S> legal;
-                for (typename std::vector<S>::iterator it = neighbors.begin(); it != neighbors.end(); ++it)
-                    if (acceptanceCriterion(*it))
+            std::cout << "iter: " << this->iter << "\n";
+            while (!terminationCondition()) {
+                std::cout << "iterations left: " << this->iter << "\n" << t.size() << " items in tabu list\n";
+                std::vector<S*> neighbors = candidateSolution.fullNeighborhood();
+                //std::cout << neighbors.size() << " neighbors\n";
+                std::vector<S*> legal;
+                for (typename std::vector<S*>::iterator it = neighbors.begin(); it != neighbors.end(); ++it)
+                    if (acceptanceCriterion(**it))
                         legal.push_back(*it);
+                //std::cout << legal.size() << " legal\n";
                 candidateSolution = candidateSelection(legal);
+                //std::cout << "candidate:\n" << candidateSolution << "\n";
                 if (candidateSolution.getEval() < this->bestSolution->getEval())
                     *(this->bestSolution) = candidateSolution;
+                std::cout << "bestSolution is now\n" << *(this->bestSolution) << "\n";
                 t.push_back(make_pair(this->iter, candidateSolution));
+                //std::cout << "tabu list size: " << t.size() << "\n";
                 expire_features();
                 --(this->iter);
+                break;
             }
         }
     };
