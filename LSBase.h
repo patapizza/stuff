@@ -47,14 +47,13 @@ namespace CBLS {
 		S *bestSolution;
 		int iter;
 	public:
-		LSProgram(S *initialSolution) : bestSolution(initialSolution) {
+		LSProgram(S *initialSolution, int iter) : bestSolution(initialSolution), iter(iter) {
 			//this->bestSolution = initialSolution;
 		}
 		virtual bool terminationCondition() =0; 		// decides whether the LS procedure should stop or not
 		virtual bool acceptanceCriterion(S& candidateSolution, S& incumbentSolution) =0;	
 														// tells whether current solution must be accepted, according to the incumbent solution
 		void run() {
-			iter = 0;
 			S incumbentSolution(*bestSolution);			// invokes the copy constructor
 			S neighborSolution(*bestSolution);			// invokes the copy constructor
 			while (false == terminationCondition()) {
@@ -68,7 +67,7 @@ namespace CBLS {
 						*bestSolution = incumbentSolution;
 					} 
 				}
-				iter++;
+				--iter;
 			}
 		}
 
@@ -80,16 +79,11 @@ namespace CBLS {
         std::vector<std::pair<int, S> > t;
         int tenure;
     public:
-        LSTabu(S *initialSolution) : LSProgram<S>(initialSolution) {
-            LSTabu(initialSolution, 1000000, 2);
-        }
-        LSTabu(S *initialSolution, int iter, int tenure) : LSProgram<S>(initialSolution), tenure(tenure) {
-            this->iter = iter;
-            //this->tenure = tenure;
+        LSTabu(S *initialSolution, int iter, int tenure) : LSProgram<S>(initialSolution, iter), tenure(tenure) {
         }
 
         bool terminationCondition() {
-            return this->iter == 0;
+            return this->iter == 999990;
         }
 
         bool acceptanceCriterion(S &candidateSolution, S &incumbentSolution) {
@@ -134,10 +128,9 @@ namespace CBLS {
                     *(this->bestSolution) = candidateSolution;
                 std::cout << "bestSolution is now\n" << *(this->bestSolution) << "\n";
                 t.push_back(make_pair(this->iter, candidateSolution));
-                //std::cout << "tabu list size: " << t.size() << "\n";
+                std::cout << "tabu list size: " << t.size() << "\n";
                 expire_features();
                 --(this->iter);
-                break;
             }
         }
     };

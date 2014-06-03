@@ -149,7 +149,7 @@ inline std::ostream &operator << (std::ostream &out, SolutionNQueens &s) {
 template <class S> class LSProgramNQueens : public LSTabu<S> {
 public:
 	//LSProgramNQueens(S *initialSolution) : LSProgram<S>(initialSolution) {
-    LSProgramNQueens(S *initialSolution) : LSTabu<S>(initialSolution) {
+    LSProgramNQueens(S *initialSolution, int iter, int tenure) : LSTabu<S>(initialSolution, iter, tenure) {
     }
 
 	bool acceptanceCriterion(S &candidateSolution, S &incumbentSolution) {
@@ -169,7 +169,7 @@ int main() {
     srand(time(NULL));
 	SolutionNQueens s(8);
 	cout << "Initial solution: " << endl << s << endl;
-	LSProgramNQueens<SolutionNQueens> p(&s);
+	LSProgramNQueens<SolutionNQueens> p(&s, 1000000, 2);
 	cout << "Running LS program..." << endl;
 	p.run();
 	cout << endl << "Best solution found: \n" << s << endl;
