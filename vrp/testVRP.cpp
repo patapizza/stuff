@@ -24,6 +24,10 @@ void usage() {
 	exit (8);
 }
 
+bool f_static(SolutionVRP &bestSolution, SolutionVRP &currentSolution) {
+	return false;
+}
+
 
 int main(int argc, char *argv[]) {
 	program_name = argv[0];
@@ -34,18 +38,21 @@ int main(int argc, char *argv[]) {
 	long t = time(NULL);
 	srand(t);
 	readInstanceFileCordeauLaporteVRPold(instance_file); 
-	solutionVRP s;
-	s.sampleInstance(1.0);
+	SolutionVRP s;
+	while (s.activateOneRequest(-1)) {}
 	cout << "Generating initial VRP solution ..." << flush;
 	s.generateInitialSolution(); 
 	cout << "Done.\n" << flush; 
 	cout << "Initial solution: " << endl << s.toString() << endl << flush;
 
-	//LSProgramBasic<solutionVRP> p(&s, nb_iter, 3);
-	LSProgramBasicDynamicWeights<solutionVRP> p(&s, nb_iter, 1, 0.0011);
+	//LSProgramBasic<SolutionVRP> p(&s, &f_static, nb_iter, 2500, 1); // 1% diversification
+	//LSProgramBasicDynamicWeights<SolutionVRP> p(&s, &f_static, nb_iter, 2500, 1, 0.0001); // 1% diversification, delta=0.0001
+	LSProgram_SimulatedAnnealing<SolutionVRP> p(s, &f_static, nb_iter, 5000, 100.0, 1.0, 0.95);	// init temp:2.0, min temp: 0.01, cooling factor 0.99
+	//LSProgram_SimulatedAnnealing_MinimizeRouteNumber<SolutionVRP> p(&s, &f_static, nb_iter, 2500, 2.0, 0.01, 0.95);
+	//LSProgram_SimulatedAnnealing_DynamicWeights<SolutionVRP> p(&s, &f_static, nb_iter, 2500, 10.0, 2.0, 0.95, 0.0001);
+
 	cout << "Running LS program" << endl;
 	p.run();
 	cout << endl << "Terminated. Best solution found: \n" << s.toString() << endl;
-	p.printWeights();	// remove if not DynamicWeights !!
 	s.checkSolutionConsistency();
 }
