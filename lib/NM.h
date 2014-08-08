@@ -16,7 +16,7 @@ extern double **c;		// Arc costs
 extern int NWaiting;	// number of waiting fake requests, i.e. vertices where the vehicle can go in order to wait for possible sorrounding requests
 extern int nbNonPlanned;// Number of non planned requests (which are active and non mandatory)
 
-#define	K				9	// number of neighborhoods
+#define	K				6	// number of neighborhoods
 #define	K_SIZE			5
 
 
@@ -26,15 +26,15 @@ extern int nbNonPlanned;// Number of non planned requests (which are active and 
 #define ADD_WAITING_TIME 			3
 #define REMOVE_WAITING_TIME 		4
 
-#define	EXCHANGE 					5
-#define	RELOCATE_BEST_IMPROVEMENT	6
+#define	RELOCATE_BEST_IMPROVEMENT	5
 
 
-#define TWO_EXCHANGE				7 	// quite bad
-#define	RELOCATE_WORST_VIOLATIONS	8 	// bad
+#define TWO_EXCHANGE				6 	// quite bad
+#define	RELOCATE_WORST_VIOLATIONS	100 	// bad
+#define	EXCHANGE 					101		// bad
 
 
-#define	CROSS_EXCHANGE				9   // must stay the last one ! because of size
+#define	CROSS_EXCHANGE			7   // must stay the last one ! because of size
 
 template <class S> class neighborhoodManager {
 protected:
@@ -71,6 +71,7 @@ public:
 };
 
 // applying adaptative algorithm as in "An Adaptative LNS heuristic for the PDPTW" - Ropke, Pisinger, 2005
+// !!!!!!! bug ! an array bound is somewhere violated without triggering a segfault ! should use Valgrind with --tool=exp-sgcheck to find where
 #define 	MAX_SEGMENT_SIZE 	100
 #define		REACTION_FACTOR 	0.1
 template <class S> class neighborhoodManager_Adaptative : public neighborhoodManager<S> { 
@@ -180,6 +181,8 @@ void neighborhoodManager<S>::shakeSolution(){
 	if(availableCust == 0)
 		return;
 	*/
+	k = rand() % K + 1;
+
 	switch (k) {
 		case RELOCATE_BEST_IMPROVEMENT:
 			relocate_best_improvement();
@@ -301,7 +304,7 @@ void neighborhoodManager<S>::relocate_worst_violations() {
 
 	// MOVE it
 	int chance = rand() % 100 + 1;
-	if (chance <= 10) {	// 1)
+	if (chance <= 50) {	// 1)
 		before_i = solution->randomInsertion(vertex);
 	} else {			// 2)
 		before_i = solution->bestInsertion(vertex, delta, 1.0); 	// find the best position to re-insert it		
@@ -476,7 +479,7 @@ void neighborhoodManager<S>::insert_waiting_req(int k_size) {
 		else
 			ASSERT(veh[vertex]==0, "vertex = "<<vertex);
 		// MOVE it
-		if (chance <= 10) {	// 1)
+		if (chance <= 90) {	// 1)
 			before_i = solution->randomInsertion(vertex);
 		} else {			// 2)
 			before_i = solution->bestInsertion(vertex, delta, 1.0); 	// find the best position to re-insert it		
